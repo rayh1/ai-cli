@@ -1,0 +1,15 @@
+# docker-compose.yml
+services:
+  claude:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.claude
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+      - claude_home:/root        # <— persist ALL of /root (includes ~/.claude AND ~/.claude.json)
+    stdin_open: true
+    tty: true
+
+volumes:
+  claude_home: {}
