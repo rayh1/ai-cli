@@ -6,8 +6,12 @@ services:
       dockerfile: docker/Dockerfile.claude
     working_dir: /workspace
     volumes:
-      - ./:/workspace
-      - claude_home:/root        # <— persist ALL of /root (includes ~/.claude AND ~/.claude.json)
+      # Mount the *caller’s* current directory into /workspace
+      - type: bind
+        source: ${HOST_PWD}
+        target: /workspace
+      # Persist the whole home dir (keeps auth + settings)
+      - claude_home:/root
     stdin_open: true
     tty: true
 

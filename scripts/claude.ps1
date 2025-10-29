@@ -3,12 +3,20 @@ param(
   [string[]]$Rest
 )
 
-# Resolve repo root (compose file lives next to this scripts/ folder)
+# Repo root = parent of this scripts/ folder
 $RepoRoot   = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $ComposeYml = Join-Path $RepoRoot "docker-compose.yml"
 
-# Run compose with explicit project directory and compose file
-docker compose `
-  --project-directory "$RepoRoot" `
-  -f "$ComposeYml" `
-  run --rm claude @Rest
+# Set HOST_PWD to the *caller’s* current directory (not the script location)
+$env:HOST_PWD = (Get-Location).Path
+
+try {
+  docker compose `
+    --project-directory "$RepoRoot" `
+    -f "$ComposeYml" `
+    run --rm claude @Rest
+}
+finally {
+  # Clean up the temp env var
+  Remove-Item Env:\HOST_PWD -ErrorAction SilentlyContinue
+}
