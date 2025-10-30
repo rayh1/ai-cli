@@ -5,9 +5,7 @@ It assumes the repo already contains:
 
 * `docker/Dockerfile.claude`
 * `docker-compose.yml`
-* `scripts/claude.ps1` and `scripts/claude.cmd`
-
-> The files themselves are the source of truth. This README avoids repeating their contents and focuses on usage, tips, and troubleshooting.
+* `scripts/claude.cmd`
 
 ---
 
@@ -25,14 +23,6 @@ It assumes the repo already contains:
 * **Docker Desktop for Windows** (WSL2 backend recommended)
 * **PowerShell** and/or **CMD**
 
-If PowerShell blocks script execution, either run once with:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\claude.ps1
-```
-
-or set your policy to allow local scripts (e.g., `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`).
-
 ---
 
 ## First-time setup
@@ -46,10 +36,8 @@ docker compose build
 2. **Sign in once**
 
 ```powershell
-# PowerShell
-.\scripts\claude.ps1
-# or CMD
-scripts\claude.cmd
+# PowerShell or CMD
+.\scripts\claude
 ```
 
 Follow the login prompt in your browser.
@@ -62,20 +50,20 @@ Your **credentials and settings** are stored in the Docker volume and reused nex
 * **Interactive TUI**
 
   ```powershell
-  .\scripts\claude.ps1
+  .\scripts\claude
   ```
 * **Headless one-shot task (machine-readable)**
 
   ```powershell
-  .\scripts\claude.ps1 -p "run unit tests and summarize failures" --output-format json
+  .\scripts\claude -p "run unit tests and summarize failures" --output-format json
   ```
 * **Run from anywhere** (full path works; wrappers locate the compose file automatically)
 
   ```powershell
-  C:\path\to\repo\scripts\claude.ps1 -p "hello"
+  C:\path\to\repo\scripts\claude -p "hello"
   ```
 
-> Optional: add `your-repo\scripts` to your **PATH** so you can type `claude.ps1` / `claude.cmd` anywhere.
+> Optional: add `your-repo\scripts` to your **PATH** so you can type `claude` anywhere.
 
 ---
 
@@ -131,7 +119,7 @@ If you prefer using a **Claude Console API key** instead of OAuth:
 ## Troubleshooting
 
 * **“no configuration file provided: not found”**
-  You’re running a wrapper from outside the repo. The provided wrappers already pass the repo’s compose file, so this should be resolved. Ensure you’re using the **updated** `scripts/claude.ps1` / `.cmd`.
+  You’re running a wrapper from outside the repo. The provided wrappers already pass the repo’s compose file, so this should be resolved. Ensure you’re using the `scripts/claude.cmd`.
 
 * **Asks to authenticate every run**
   Confirm the compose volume maps the container **home** directory (not just `~/.claude`). After the first successful login, future runs should start without prompts.
@@ -161,4 +149,4 @@ If you prefer using a **Claude Console API key** instead of OAuth:
 ---
 
 **That’s it.**
-Build once, sign in once, and use `.\scripts\claude.ps1` (or `scripts\claude.cmd`) for fast, persistent Claude runs inside Docker.
+Build once, sign in once, and use `.\scripts\claude.cmd` for fast, persistent Claude runs inside Docker.
