@@ -1,19 +1,55 @@
-# docker-compose.yml
 services:
   claude:
     build:
       context: .
-      dockerfile: docker/Dockerfile.claude
+      dockerfile: docker/Dockerfile.ai-cli
     working_dir: /workspace
+    entrypoint: ["claude"]
     volumes:
-      # Mount the *caller’s* current directory into /workspace
+      # Mount the *caller’s* CWD (set by wrapper) into /workspace
       - type: bind
         source: ${HOST_PWD}
         target: /workspace
-      # Persist the whole home dir (keeps auth + settings)
+      # Persist full home (auth + settings)
       - claude_home:/root
     stdin_open: true
     tty: true
 
+  codex:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai-cli
+    working_dir: /workspace
+    entrypoint: ["codex"]
+    volumes:
+      - type: bind
+        source: ${HOST_PWD}
+        target: /workspace
+      - codex_home:/root
+    stdin_open: true
+    tty: true
+
+  codex-login:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai-cli
+    working_dir: /workspace
+    # We use bash to launch the bridge then exec into codex login
+    entrypoint: ["bash","-lc"]
+    command:
+      - |
+        socat -T15 TCP-LISTEN:1456,bind=0.0.0.0,reuseaddr,fork TCP:127.0.0.1:1455 &
+        exec codex login
+    volumes:
+      - type: bind
+        source: ${HOST_PWD}
+        target: /workspace
+      - codex_home:/root
+    stdin_open: true
+    tty: true
+    ports:
+      - "127.0.0.1:1455:1456"   # host:container
+
 volumes:
   claude_home: {}
+  codex_home: {}

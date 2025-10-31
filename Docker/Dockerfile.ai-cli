@@ -1,0 +1,12 @@
+FROM node:20-bookworm-slim
+
+# Basics + socat for the codex login bridge
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git ca-certificates bash curl socat && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install BOTH CLIs
+RUN npm i -g @anthropic-ai/claude-code @openai/codex
+
+# Workdir; no ENTRYPOINT (set per service in compose)
+WORKDIR /workspace

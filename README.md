@@ -1,152 +1,160 @@
-# Claude Code (CLI) via Docker on Windows — Minimal Runner (Compose)
+# Claude & Codex CLIs via Docker on Windows — Minimal Runner (Compose)
 
-This README documents **how to use** the provided Docker/Compose setup to run **Claude Code (CLI)** on a Windows workstation with **persisted authentication & settings**, and **short commands**.
-It assumes the repo already contains:
+This README explains **how to use** the repository’s Docker/Compose setup to run:
 
-* `docker/Dockerfile.claude`
-* `docker-compose.yml`
-* `scripts/claude.cmd`
+* **Claude Code (CLI)**
+* **OpenAI Codex CLI** (incl. a special **OAuth login helper**)
+
+…with **persisted auth & settings**, **short commands**, and without local installs.
 
 ---
 
-## What this gives you
+## What you get
 
-* Run `Claude Code (CLI)` **inside Docker** on Windows.
-* **Config & auth persist** between runs (Docker **named volume**).
-* **Short commands** via the wrapper scripts.
-* Works from **any directory** (wrappers target the repo’s compose file explicitly).
+* Run **Claude** and **Codex** CLIs entirely **inside Docker** on Windows.
+* **Auth & settings persist** via named volumes (`claude_home`, `codex_home`).
+* **Short commands** using tiny CMD wrappers.
+* Run from **any directory** (wrappers target the repo’s compose file and mount your *current* folder into `/workspace`).
 
 ---
 
 ## Prerequisites
 
 * **Docker Desktop for Windows** (WSL2 backend recommended)
-* **PowerShell** and/or **CMD**
+* **PowerShell** and/or **Command Prompt (CMD)**
+* Add `your-repo\scripts` to your **PATH** so you can run `claude`, `codex`, and `codex-login` from anywhere.
+
+> Tip (PowerShell): if you pass shell metacharacters (`| > & <`), use the **stop-parsing** token `--%` after the command.
 
 ---
 
 ## First-time setup
 
-1. **Build the image**
+1. **Build the image (once)**
 
 ```powershell
 docker compose build
 ```
 
-2. **Sign in once**
+2. **Sign in (one-time)**
+
+### Claude
 
 ```powershell
-# PowerShell or CMD
-.\scripts\claude
+claude
 ```
 
-Follow the login prompt in your browser.
-Your **credentials and settings** are stored in the Docker volume and reused next time (no re-login).
+Follow the browser prompt. Credentials persist in the `claude_home` volume.
+
+### Codex
+
+Starts a small in-container bridge so the browser callback works on Windows:
+
+```powershell
+codex-login
+```
+
+  After success, credentials persist in `codex_home`.
 
 ---
 
 ## Everyday use
 
+### Claude
+
 * **Interactive TUI**
 
   ```powershell
-  .\scripts\claude
+  claude
   ```
-* **Headless one-shot task (machine-readable)**
+* **Headless / one-shot**
 
   ```powershell
-  .\scripts\claude -p "run unit tests and summarize failures" --output-format json
+  claude -p "run unit tests and summarize failures" --output-format json
   ```
-* **Run from anywhere** (full path works; wrappers locate the compose file automatically)
+
+### Codex
+
+* **Interactive TUI**
 
   ```powershell
-  C:\path\to\repo\scripts\claude -p "hello"
+  codex
+  ```
+* **Headless / one-shot**
+
+  ```powershell
+  codex -p "refactor foo() and explain changes" --output-format json
   ```
 
-> Optional: add `your-repo\scripts` to your **PATH** so you can type `claude` anywhere.
+  *(PowerShell only: if you include shell metacharacters, add `--%` after `codex`.)*
 
 ---
 
 ## Persistence (what’s stored where)
 
-* The container’s **home directory** (`/root`) is persisted via a named volume (defined in `docker-compose.yml`).
-  That includes:
+* The container **home** (`/root`) is persisted per CLI:
 
-  * `~/.claude/…` (settings, credentials)
-  * `~/.claude.json` (user-level config/sentinel)
+  * **Claude:** `claude_home` → contains `~/.claude/…` and `~/.claude.json`
+  * **Codex:**  `codex_home`  → contains `~/.codex/auth.json`, `~/.codex/config.toml`
 
-Result: **no repeated authentication prompts** after the first login.
+Result: **no repeated logins** after the first authentication.
 
 ---
 
 ## Updating, resetting, and backup
 
-* **Update to the latest CLI**
+**Update CLIs in the image**
 
-  ```powershell
-  docker compose build --no-cache
-  ```
+```powershell
+docker compose build --no-cache
+```
 
-* **Reset (sign out & wipe settings)**
+**Reset (sign out & wipe settings)**
 
-  ```powershell
-  docker compose down
-  docker volume rm claude_home
-  ```
+```powershell
+docker compose down
+docker volume rm claude_home
+docker volume rm codex_home
+```
 
-* **Backup the persisted home (optional)**
+**Backup a persisted home (example for Codex)**
 
-  ```powershell
-  docker run --rm -v claude_home:/home busybox tar -C / -czf - home > claude_home_backup.tgz
-  ```
-
----
-
-## Optional: API key (no browser sign-in)
-
-If you prefer using a **Claude Console API key** instead of OAuth:
-
-1. Create a `.env` (not committed) in the repo root:
-
-   ```
-   ANTHROPIC_API_KEY=your_api_key_here
-   ```
-2. Add the environment variable to the service (see the comment in `docker-compose.yml`) and rebuild.
-   Then run the wrapper as usual. The CLI will use the API key automatically.
+```powershell
+docker run --rm -v codex_home:/home busybox tar -C / -czf - home > codex_home_backup.tgz
+```
 
 ---
 
 ## Troubleshooting
 
-* **“no configuration file provided: not found”**
-  You’re running a wrapper from outside the repo. The provided wrappers already pass the repo’s compose file, so this should be resolved. Ensure you’re using the `scripts/claude.cmd`.
+* **Codex OAuth login fails with localhost callback**
+  Use `codex-login` (it runs a small bridge inside the container), or use the **API key** method.
 
-* **Asks to authenticate every run**
-  Confirm the compose volume maps the container **home** directory (not just `~/.claude`). After the first successful login, future runs should start without prompts.
+* **I accidentally see a `login:` prompt in the terminal**
+  That’s the Linux `/bin/login`. Don’t pass the word `login` to the normal `codex` service. Use the dedicated `codex-login` command instead.
 
-  Quick check:
+* **“no configuration file provided”**
+  Ensure you’re using the provided wrappers (`claude`, `codex`, `codex-login`) which pass the correct compose/project paths.
+
+* **PowerShell ate my flags**
+  Use the **CMD** wrappers (recommended), or add `--%` after the command in PowerShell:
 
   ```powershell
-  docker compose run --rm claude sh -lc 'ls -la ~ | grep "\.claude\.json"; ls -la ~/.claude | grep credentials'
+  codex --% -p "echo a | echo b" --output-format json
   ```
-
-  You should see both a `~/.claude.json` and a `~/.claude/.credentials.json`.
-
-* **Git operations from inside the container**
-  Simplest on Windows is **HTTPS** remotes with a **PAT**. SSH agent forwarding is possible but intentionally not included here (to keep things minimal).
 
 ---
 
 ## Notes & next steps
 
-* This is the **minimal** pattern: one service, one named volume, two tiny wrappers.
-* When you need more control later, you can:
+* This is the **minimal** pattern: single image, per-CLI volumes, tiny wrappers.
+* When you need more control, you can:
 
-  * Add **permission defaults** in `~/.claude/settings.json` or a repo-level `.claude/settings.json`.
-  * Introduce **egress controls** or a firewall layer in the image.
-  * Wire up **SSH agent** or credential helpers for Git.
+  * Add **permission defaults** (Claude) via user or repo settings.
+  * Introduce **egress controls** or firewall rules in the image.
+  * Wire up **SSH** or credential helpers for Git (we keep it minimal here).
 
 ---
 
-**That’s it.**
-Build once, sign in once, and use `.\scripts\claude.cmd` for fast, persistent Claude runs inside Docker.
+**Done.**
+Build once, authenticate once, then use `claude` and `codex` for fast, persistent CLI runs—use `codex-login` only for the one-time OAuth flow on Windows.
