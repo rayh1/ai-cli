@@ -8,5 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install BOTH CLIs
 RUN npm i -g @anthropic-ai/claude-code @openai/codex
 
+# Playwright MCP + browsers (Chromium only to keep the image smaller)
+RUN npm i -g @playwright/mcp@latest @playwright/test@latest \
+ && npx playwright install --with-deps chromium
+
 # Workdir; no ENTRYPOINT (set per service in compose)
 WORKDIR /workspace
