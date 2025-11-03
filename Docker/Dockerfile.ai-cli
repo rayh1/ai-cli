@@ -5,8 +5,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git ca-certificates bash curl socat && \
     rm -rf /var/lib/apt/lists/*
 
-# Install BOTH CLIs
-RUN npm i -g @anthropic-ai/claude-code @openai/codex
+# Install ALL CLIs
+RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
 
 # Playwright MCP + browsers (Chromium only to keep the image smaller)
 RUN npm i -g @playwright/mcp@latest \
