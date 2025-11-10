@@ -1,16 +1,27 @@
 FROM node:20-bookworm-slim
 
+ARG ARG_UV_VERSION
+ARG ARG_PLAYWRIGHT_MCP_VERSION
+
 # Basics + socat for the codex login bridge
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates bash curl socat && \
+    git ca-certificates bash curl socat wget python3-full && \
     rm -rf /var/lib/apt/lists/*
 
 # Install ALL CLIs
 RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
 
 # Playwright MCP + browsers (Chromium only to keep the image smaller)
-RUN npm i -g @playwright/mcp@latest \
-    && npx -p @playwright/mcp playwright install --with-deps chromium
+RUN npm i -g @playwright/mcp@${ARG_PLAYWRIGHT_MCP_VERSION} \
+    && npx -p @playwright/mcp@${ARG_PLAYWRIGHT_MCP_VERSION} playwright install --with-deps chromium
+	
+# Install uv
+RUN wget -qO- https://astral.sh/uv/${ARG_UV_VERSION}/install.sh | sh && \
+    cp /root/.local/bin/uv /usr/local/bin/uv && \
+    cp /root/.local/bin/uvx /usr/local/bin/uvx
+
+# Copy MCP configuration files
+COPY mcp /opt/mcp
 
 # Workdir; no ENTRYPOINT (set per service in compose)
 WORKDIR /workspace

@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.ai-cli
+      args:
+        - ARG_UV_VERSION=${UV_VERSION}
+        - ARG_PLAYWRIGHT_MCP_VERSION=${PLAYWRIGHT_MCP_VERSION}
     working_dir: /workspace
     entrypoint: ["claude"]
     volumes:
@@ -20,6 +23,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.ai-cli
+      args:
+        - ARG_UV_VERSION=${UV_VERSION}
+        - ARG_PLAYWRIGHT_MCP_VERSION=${PLAYWRIGHT_MCP_VERSION}
     working_dir: /workspace
     entrypoint: ["codex"]
     volumes:
@@ -35,6 +41,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.ai-cli
+      args:
+        - ARG_UV_VERSION=${UV_VERSION}
+        - ARG_PLAYWRIGHT_MCP_VERSION=${PLAYWRIGHT_MCP_VERSION}
     working_dir: /workspace
     # We use bash to launch the bridge then exec into codex login
     entrypoint: ["bash","-lc"]

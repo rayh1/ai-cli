@@ -2,7 +2,6 @@
 set -e
 
 # Playwright MCP setup for Github Copilot CLI
-# Configures: --browser chromium --headless --isolated --no-sandbox
 
 CONFIG_DIR="$HOME/.copilot"
 CONFIG_FILE="$CONFIG_DIR/mcp-config.json"
@@ -16,8 +15,8 @@ cat > "$CONFIG_FILE" << 'EOF'
   "mcpServers": {
     "playwright": {
       "type": "local",
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox"],
+      "command": "python3",
+      "args": ["/opt/mcp/playwright-mcp.py"],
       "tools": ["*"]
     }
   }
