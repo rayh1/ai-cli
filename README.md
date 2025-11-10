@@ -58,7 +58,7 @@ copilot          # enter /login command and follow device code flow; creds persi
 ### 3) Enable Playwright MCP (headless Chromium) for all CLIs
 
 ```powershell
-claude-mcp-playwright         # registers: --browser chromium --headless --isolated --no-sandbox
+claude-mcp-playwright         # registers Python-based Playwright MCP
 codex-mcp-playwright          # same for Codex
 copilot-mcp-playwright        # same for Github Copilot
 ```
@@ -88,10 +88,11 @@ This README explains **how to use** the repository's Docker/Compose setup to run
 
 It assumes the repo contains:
 
-* `docker/Dockerfile.ai-cli` (single image that installs all CLIs and Playwright MCP + Chromium)
+* `Docker/Dockerfile.ai-cli` (single image that installs all CLIs and Playwright MCP + Chromium)
 * `docker-compose.yml` (services: `claude`, `codex`, `copilot`, `codex-login`; named volumes incl. browser cache)
 * `scripts/claude.cmd`, `scripts/codex.cmd`, `scripts/copilot.cmd`, `scripts/codex-login.cmd`
 * `scripts/claude-mcp-playwright.cmd`, `scripts/codex-mcp-playwright.cmd`, `scripts/copilot-mcp-playwright.cmd` + `.sh`
+* `mcp/` directory with Python-based Playwright MCP server files
 
 > The files are the source of truth; this README focuses on *usage* and avoids repeating file contents.
 
@@ -153,17 +154,7 @@ Enter `/login` command in the CLI and follow the device code flow in your browse
 claude-mcp-playwright
 ```
 
-Registers with Docker-safe defaults:
-
-```
---browser chromium --headless --isolated --no-sandbox
-```
-
-> Persistent profile (stay logged in):
->
-> ```powershell
-> claude-mcp-playwright persist
-> ```
+Registers the Python-based Playwright MCP server from `/opt/mcp/playwright-mcp.py`.
 
 **Codex → Playwright MCP**
 
@@ -177,7 +168,7 @@ codex-mcp-playwright
 copilot-mcp-playwright
 ```
 
-> **Note:** Github Copilot CLI uses a JSON configuration file (`~/.config/mcp-config.json`) instead of command-line registration. The script automatically creates this configuration for you.
+> **Note:** Github Copilot CLI uses a JSON configuration file (`~/.copilot/mcp-config.json`) instead of command-line registration. The script automatically creates this configuration for you.
 
 Verify:
 
@@ -189,7 +180,7 @@ codex  mcp list
 For Github Copilot, check the config file in the container:
 
 ```powershell
-copilot bash -c "cat ~/.config/mcp-config.json"
+copilot bash -c "cat ~/.copilot/mcp-config.json"
 ```
 
 ---
@@ -237,7 +228,7 @@ Ask it to browse via MCP:
 
 * **Claude:** `claude_home` → `~/.claude/…`, `~/.claude.json`
 * **Codex:**  `codex_home`  → `~/.codex/auth.json`, `~/.codex/config.toml`
-* **Github Copilot:** `copilot_home` → `~/.config/config.json`, `~/.config/mcp-config.json`
+* **Github Copilot:** `copilot_home` → `~/.copilot/config.json`, `~/.copilot/mcp-config.json`
 * **Playwright cache:** `~/.cache/ms-playwright` (mounted as a named volume for faster cold starts)
 
 ---
@@ -275,13 +266,10 @@ docker run --rm -v copilot_home:/home busybox tar -C / -czf - home > copilot_hom
 
 ## Troubleshooting
 
-* **Chrome path errors** → use the provided scripts (they target **chromium**).
-* **"Browser is already in use …"** → default scripts use `--isolated`; or switch to a persistent profile and avoid parallel sessions.
-* **Sandbox issues** → scripts include `--no-sandbox` for root-in-container. For stricter isolation, run services as **non-root** with a seccomp profile (advanced).
-* **Crashes/blank pages** → add `ipc: host` **or** `shm_size: "1g"` to the `claude`/`codex`/`copilot` service.
+* **MCP server issues** → verify the Python MCP server files are correctly copied to `/opt/mcp/` in the container.
 * **"no configuration file provided"** → use the wrappers (`claude`, `codex`, `copilot`, `codex-login`, `claude-mcp-playwright`, `codex-mcp-playwright`, `copilot-mcp-playwright`) so Compose paths are correct.
 * **PowerShell ate my flags** → prefer CMD wrappers, or add `--%` after the command.
-* **Github Copilot MCP not working** → verify the config file exists with `copilot bash -c "cat ~/.config/mcp-config.json"`. Re-run `copilot-mcp-playwright` if needed.
+* **Github Copilot MCP not working** → verify the config file exists with `copilot bash -c "cat ~/.copilot/mcp-config.json"`. Re-run `copilot-mcp-playwright` if needed.
 
 ---
 
