@@ -3,10 +3,23 @@ FROM node:22-bookworm-slim
 ARG ARG_UV_VERSION
 ARG ARG_PLAYWRIGHT_MCP_VERSION
 
-# Basics + socat for the codex login bridge
+# Basics + socat for the codex login bridge + build dependencies for Python
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates bash curl socat wget python3-full && \
+    git ca-certificates bash curl socat wget \
+    build-essential libssl-dev zlib1g-dev libbz2-dev \
+    libreadline-dev libsqlite3-dev libffi-dev liblzma-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Python 3.12 from source
+RUN wget https://www.python.org/ftp/python/3.12.7/Python-3.12.7.tgz && \
+    tar -xf Python-3.12.7.tgz && \
+    cd Python-3.12.7 && \
+    ./configure --enable-optimizations --with-ensurepip=install && \
+    make -j$(nproc) && \
+    make altinstall && \
+    cd .. && rm -rf Python-3.12.7 Python-3.12.7.tgz && \
+    ln -sf /usr/local/bin/python3.12 /usr/bin/python3 && \
+    ln -sf /usr/local/bin/pip3.12 /usr/bin/pip3
 
 # Install ALL CLIs
 RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
@@ -27,11 +40,11 @@ COPY mcp /opt/mcp
 COPY extensions /opt/extensions
 RUN if [ -s /opt/extensions/requirements.txt ]; then \
         echo "Installing packages from requirements.txt..." && \
-        uv pip install --system -r /opt/extensions/requirements.txt; \
+        uv pip install --system --break-system-packages -r /opt/extensions/requirements.txt; \
     fi && \
     if ls /opt/extensions/packages/*.whl 1> /dev/null 2>&1; then \
         echo "Installing wheel files from packages/..." && \
-        uv pip install --system /opt/extensions/packages/*.whl; \
+        uv pip install --system --break-system-packages /opt/extensions/packages/*.whl; \
     fi
 
 # Workdir; no ENTRYPOINT (set per service in compose)
