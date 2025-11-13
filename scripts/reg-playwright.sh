@@ -24,8 +24,3 @@ cat > "$CONFIG_FILE" << 'EOF'
 EOF
 
 echo "[OK] Playwright MCP configured in $CONFIG_FILE"
-echo ""
-echo "Configuration:"
-cat "$CONFIG_FILE"
-echo ""
-echo "[INFO] Restart copilot CLI to use Playwright MCP."
