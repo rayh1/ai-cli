@@ -1,83 +1,24 @@
 services:
-  claude:
+  # Generic service - entrypoint can be overridden dynamically
+  ai-cli:
     build:
       context: .
-      dockerfile: docker/Dockerfile.ai-cli
+      dockerfile: Docker/Dockerfile.ai-cli
       args:
         - ARG_UV_VERSION=${UV_VERSION}
         - ARG_PLAYWRIGHT_MCP_VERSION=${PLAYWRIGHT_MCP_VERSION}
     working_dir: /workspace
-    entrypoint: ["claude"]
     volumes:
-      # Mount the *caller’s* CWD (set by wrapper) into /workspace
+      # Mount the *caller's* CWD (set by wrapper) into /workspace
       - type: bind
         source: ${HOST_PWD}
         target: /workspace
       # Persist full home (auth + settings)
-      - claude_home:/root
-      - playwright_cache:/root/.cache/ms-playwright   # <-- persist browsers
-    stdin_open: true
-    tty: true
-
-  codex:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.ai-cli
-      args:
-        - ARG_UV_VERSION=${UV_VERSION}
-        - ARG_PLAYWRIGHT_MCP_VERSION=${PLAYWRIGHT_MCP_VERSION}
-    working_dir: /workspace
-    entrypoint: ["codex"]
-    volumes:
-      - type: bind
-        source: ${HOST_PWD}
-        target: /workspace
-      - codex_home:/root
-      - playwright_cache:/root/.cache/ms-playwright   # <-- persist browsers
-    stdin_open: true
-    tty: true
-
-  codex-login:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.ai-cli
-      args:
-        - ARG_UV_VERSION=${UV_VERSION}
-        - ARG_PLAYWRIGHT_MCP_VERSION=${PLAYWRIGHT_MCP_VERSION}
-    working_dir: /workspace
-    # We use bash to launch the bridge then exec into codex login
-    entrypoint: ["bash","-lc"]
-    command:
-      - |
-        socat -T15 TCP-LISTEN:1456,bind=0.0.0.0,reuseaddr,fork TCP:127.0.0.1:1455 &
-        exec codex login
-    volumes:
-      - type: bind
-        source: ${HOST_PWD}
-        target: /workspace
-      - codex_home:/root
-    stdin_open: true
-    tty: true
-    ports:
-      - "127.0.0.1:1455:1456"   # host:container
-
-  copilot:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.ai-cli
-    working_dir: /workspace
-    entrypoint: ["copilot"]
-    volumes:
-      - type: bind
-        source: ${HOST_PWD}
-        target: /workspace
-      - copilot_home:/root
+      - ai-cli_home:/root
       - playwright_cache:/root/.cache/ms-playwright   # <-- persist browsers
     stdin_open: true
     tty: true
 
 volumes:
-  claude_home: {}
-  codex_home: {}
-  copilot_home: {}
+  ai-cli_home: {}
   playwright_cache: {}
