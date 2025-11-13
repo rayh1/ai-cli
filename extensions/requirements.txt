@@ -1,0 +1,12 @@
+# Pre-build Python packages
+#
+# Add PyPI packages here to bake them into the Docker image.
+# Requires rebuilding the image: docker compose build
+#
+# Examples:
+#   requests==2.31.0
+#   pandas>=2.0.0
+#   beautifulsoup4
+#
+# For local wheel files, place them in the packages/ subdirectory.
+# Example: packages/joplink-0.1.0-py3-none-any.whl

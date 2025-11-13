@@ -23,5 +23,16 @@ RUN wget -qO- https://astral.sh/uv/${ARG_UV_VERSION}/install.sh | sh && \
 # Copy MCP configuration files
 COPY mcp /opt/mcp
 
+# Copy extensions directory and install custom Python packages
+COPY extensions /opt/extensions
+RUN if [ -s /opt/extensions/requirements.txt ]; then \
+        echo "Installing packages from requirements.txt..." && \
+        uv pip install --system -r /opt/extensions/requirements.txt; \
+    fi && \
+    if ls /opt/extensions/packages/*.whl 1> /dev/null 2>&1; then \
+        echo "Installing wheel files from packages/..." && \
+        uv pip install --system /opt/extensions/packages/*.whl; \
+    fi
+
 # Workdir; no ENTRYPOINT (set per service in compose)
 WORKDIR /workspace

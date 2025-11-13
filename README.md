@@ -146,6 +146,40 @@ Enter `/login` command in the CLI and follow the device code flow in your browse
 
 ---
 
+## Extending with Python Packages
+
+You can add custom Python packages to the container by editing `extensions/requirements.txt` or adding wheel files to `extensions/packages/`.
+
+**Adding PyPI packages:**
+
+1. Edit `extensions/requirements.txt`:
+   ```
+   requests==2.31.0
+   pandas>=2.0.0
+   beautifulsoup4
+   ```
+
+2. Rebuild the image:
+   ```powershell
+   docker compose build
+   ```
+
+**Adding local wheel files:**
+
+1. Place your `.whl` file in `extensions/packages/`:
+   ```
+   extensions/packages/joplink-0.1.0-py3-none-any.whl
+   ```
+
+2. Rebuild the image:
+   ```powershell
+   docker compose build
+   ```
+
+> **Note:** Packages are installed into the system Python environment and available to all CLIs and MCP servers. Changes require rebuilding the Docker image.
+
+---
+
 ## Enable the Playwright MCP (one command per CLI)
 
 **Claude → Playwright MCP**
