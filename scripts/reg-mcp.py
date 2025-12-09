@@ -49,6 +49,14 @@ Security Warning:
         action="append",
         help="Environment variable in KEY=VALUE format (can be specified multiple times)",
     )
+    parser.add_argument(
+        "--env-file",
+        action="append",
+        help=(
+            "Path to file with environment variables in KEY=VALUE format, one per line. "
+            "Lines starting with # and blank lines are ignored. Can be specified multiple times."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -74,14 +82,26 @@ def build_command_with_env(command_parts, env_vars):
         Tuple of (command_string, is_wrapped_in_bash)
     """
     base_command = " ".join(command_parts)
-    
+
     if not env_vars:
         return base_command, False
-    
-    # Build export statements
-    export_statements = "; ".join(f"export {var}" for var in env_vars)
+
+    def _format_env(var: str) -> str:
+        """Format a KEY=VALUE env string as KEY='VALUE' for bash export.
+
+        This ensures that complex values (JSON, spaces, special chars) are
+        preserved correctly when passed through bash -c.
+        """
+        if "=" not in var:
+            return var
+        key, value = var.split("=", 1)
+        quoted_value = shlex.quote(value)
+        return f"{key}={quoted_value}"
+
+    # Build export statements with safely quoted values
+    export_statements = "; ".join(f"export {_format_env(var)}" for var in env_vars)
     wrapped_command = f"bash -c {shlex.quote(f'{export_statements}; {base_command}')}"
-    
+
     return wrapped_command, True
 
 
@@ -151,9 +171,16 @@ def register_copilot(name, command_parts, env_vars, repo_root):
     copilot_command = command_parts[0]
     copilot_args = command_parts[1:] if len(command_parts) > 1 else []
     
-    # If env vars present, wrap in bash
+    # If env vars present, wrap in bash with safely quoted values
     if env_vars:
-        export_statements = "; ".join(f"export {var}" for var in env_vars)
+        def _format_env(var: str) -> str:
+            if "=" not in var:
+                return var
+            key, value = var.split("=", 1)
+            quoted_value = shlex.quote(value)
+            return f"{key}={quoted_value}"
+
+        export_statements = "; ".join(f"export {_format_env(var)}" for var in env_vars)
         copilot_command = "bash"
         copilot_args = ["-c", f"{export_statements}; {' '.join(command_parts)}"]
     
@@ -231,7 +258,46 @@ def main():
     
     name = args.name
     command_parts = args.command
-    env_vars = args.env or []
+
+    # Original env var strings from CLI
+    raw_env_vars: list[str] = list(args.env or [])
+
+    # Also load env vars from files, if provided. This avoids shell quoting issues
+    # for complex values (JSON, %Y formats, etc.).
+    if getattr(args, "env_file", None):
+        for file_path in args.env_file:
+            path_obj = Path(file_path)
+            if not path_obj.exists():
+                print(f"[WARNING] Env file not found: {path_obj}", file=sys.stderr)
+                continue
+            try:
+                with path_obj.open("r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        raw_env_vars.append(line)
+            except Exception as e:
+                print(f"[WARNING] Failed to read env file {path_obj}: {e}", file=sys.stderr)
+
+    # Support a friendlier macro syntax to avoid complex JSON quoting in shells:
+    #   --env 'JOPLINK_MACRO_today=Journal/%%Y/%%m/%%Y-%%m-%%d'
+    # becomes JOPLINK_MACROS={"today":"Journal/%Y/%m/%Y-%m-%d"}
+    env_vars: list[str] = []
+    macros: dict[str, str] = {}
+
+    for var in raw_env_vars:
+        if var.startswith("JOPLINK_MACRO_") and "=" in var:
+            key, value = var.split("=", 1)
+            macro_name = key.removeprefix("JOPLINK_MACRO_")
+            if macro_name:
+                macros[macro_name] = value
+        else:
+            env_vars.append(var)
+
+    if macros:
+        macros_json = json.dumps(macros)
+        env_vars.append(f"JOPLINK_MACROS={macros_json}")
     
     scripts_dir = get_script_dir()
     repo_root = get_repo_root()

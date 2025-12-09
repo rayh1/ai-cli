@@ -201,6 +201,30 @@ reg-mcp --name <server-name> --command <cmd> [args...] [--env KEY=VALUE ...]
    reg-mcp --name custom --command python3 /opt/mcp/server.py --port 8080 --debug
    ```
 
+5. **Complex environment values (JSON, `%Y` formats, etc.) via `--env-file`:**
+
+    For complex values that include quotes, brackets, or percent formats (like `Journal/%Y/%m/%Y-%m-%d`), use an env file to avoid Windows shell quoting issues:
+
+    ```powershell
+   # joplink.env (example)
+   JOPLINK_JOPLIN_TOKEN=XXX
+   JOPLINK_JOPLIN_BASE_URL=http://host.docker.internal:41184
+   JOPLINK_MACROS={"today":"Journal/%%Y/%%m/%%Y-%%m-%%d"}
+   JOPLINK_TOOLS=["get_note","save_note","append_to_note","search_notes","get_folder","search_folders","list_child_folders","list_notes_in_folder","get_path"]
+    ```
+
+    ```powershell
+    reg-mcp --name joplink `
+       --command 'uv run python -m joplink.mcp.server' `
+       --env-file .\joplink.env
+    ```
+
+   You can specify `--env-file` multiple times; each file is read line by line, ignoring blank lines and `#` comments. This is the most robust way to pass JSON configuration into MCP servers on Windows.
+
+   **Percent (`%`) handling on Windows:**
+   - Both inline `--env` values and values inside `--env-file` ultimately pass through Windows tooling that treats `%` specially.
+   - To reliably get a single `%` into the container (for formats like `%Y`, `%m`, etc.), always write `%%Y`, `%%m`, and similar sequences in your values. They will arrive inside the container as `%Y`, `%m`, etc.
+
 ### Quick Playwright Registration
 
 Use the dedicated helper to register Playwright MCP for all CLIs at once:
