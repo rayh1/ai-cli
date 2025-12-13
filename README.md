@@ -215,8 +215,11 @@ reg-mcp --name <server-name> --command <cmd> [args...] [--env KEY=VALUE ...]
 
     ```powershell
     reg-mcp --name joplink `
-       --command 'uv run python -m joplink.mcp.server' `
+       --command 'python3 -m joplink.mcp.server' `
        --env-file .\joplink.env
+
+    # If you *must* use uv (e.g., for a project-local venv), prefer:
+    #   uv run --no-project python -m joplink.mcp.server
     ```
 
    You can specify `--env-file` multiple times; each file is read line by line, ignoring blank lines and `#` comments. This is the most robust way to pass JSON configuration into MCP servers on Windows.

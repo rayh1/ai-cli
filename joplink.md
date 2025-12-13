@@ -143,7 +143,7 @@ When registering the Joplink MCP server through this repository's `reg-mcp` help
 
 ```bash
 reg-mcp --name joplink \
-    --command 'uv run python -m joplink.mcp.server' \
+    --command 'python3 -m joplink.mcp.server' \
     --env 'JOPLINK_JOPLIN_TOKEN=XXX' \
     --env 'JOPLINK_JOPLIN_BASE_URL=http://host.docker.internal:41184'
 ```
@@ -163,8 +163,16 @@ Then register:
 
 ```bash
 reg-mcp --name joplink \
-    --command 'uv run python -m joplink.mcp.server' \
+    --command 'python3 -m joplink.mcp.server' \
     --env-file ./joplink.env
+
+If you prefer running via `uv`, make sure you don't accidentally pick up a bind-mounted
+project venv from `/workspace` (for example, a `/workspace/.venv` or a `pyproject.toml`).
+In that case, use:
+
+```bash
+uv run --no-project python -m joplink.mcp.server
+```
 ```
 
 The `--env-file` approach avoids most shell quoting issues on Windows and is the most robust way to pass JSON configuration such as `JOPLINK_MACROS` and `JOPLINK_TOOLS`.
@@ -180,7 +188,7 @@ Use the included `reg-mcp` script:
 
 ```sh
 reg-mcp --name joplink \
-  --command 'uv run python -m joplink.mcp.server' \
+    --command 'python3 -m joplink.mcp.server' \
   --env 'JOPLINK_JOPLIN_TOKEN=XXX' \
   --env 'JOPLINK_JOPLIN_BASE_URL=http://host.docker.internal:41184'
 ```
