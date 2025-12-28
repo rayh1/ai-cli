@@ -15,8 +15,8 @@ services:
         source: ${HOST_PWD}
         target: /workspace
       # Persist full home (auth + settings)
-      - ai-cli_home:/root
-      - playwright_cache:/root/.cache/ms-playwright   # <-- persist browsers
+      - ai-cli_home:/home/aiuser
+      - playwright_cache:/home/aiuser/.cache/ms-playwright   # <-- persist browsers
     stdin_open: true
     tty: true
 

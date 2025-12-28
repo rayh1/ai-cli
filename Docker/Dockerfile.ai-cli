@@ -48,5 +48,12 @@ RUN if [ -s /opt/extensions/requirements.txt ]; then \
         uv pip install /opt/extensions/packages/*.whl; \
     fi
 
+# Create non-root user and set permissions
+RUN useradd -m -s /bin/bash aiuser && \
+    chown -R aiuser:aiuser /opt/venv /opt/python /opt/mcp /opt/extensions
+
+# Switch to non-root user
+USER aiuser
+
 # Workdir; no ENTRYPOINT (set per service in compose)
 WORKDIR /workspace
