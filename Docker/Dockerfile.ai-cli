@@ -16,14 +16,16 @@ RUN wget -qO- https://astral.sh/uv/${ARG_UV_VERSION}/install.sh | sh && \
 
 ENV UV_PYTHON_INSTALL_DIR=/opt/python
 
-# Install Python using uv and create symlinks for python/python3
-RUN uv python install --install-dir /opt/python ${ARG_PYTHON_VERSION} && \
-    UV_PYTHON_PATH=$(uv python find ${ARG_PYTHON_VERSION}) && \
-    UV_PYTHON_DIR=$(dirname "$UV_PYTHON_PATH") && \
-    ln -sf "$UV_PYTHON_PATH" /usr/bin/python && \
-    ln -sf "$UV_PYTHON_PATH" /usr/bin/python3 && \
-    ln -sf "$UV_PYTHON_DIR/pip" /usr/bin/pip 2>/dev/null || true && \
-    ln -sf "$UV_PYTHON_DIR/pip3" /usr/bin/pip3 2>/dev/null || true
+# Install Python using uv
+RUN uv python install --install-dir /opt/python ${ARG_PYTHON_VERSION}
+
+# Create a default virtual environment
+RUN uv venv /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install pip into the venv so pip commands work
+RUN uv pip install pip
 
 # Install ALL CLIs
 RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
@@ -35,17 +37,15 @@ RUN npm i -g @playwright/mcp@${ARG_PLAYWRIGHT_MCP_VERSION} \
 # Copy MCP configuration files
 COPY mcp /opt/mcp
 
-RUN UV_PYTHON_PATH=$(uv python find ${ARG_PYTHON_VERSION})
-
 # Copy extensions directory and install custom Python packages
 COPY extensions /opt/extensions
 RUN if [ -s /opt/extensions/requirements.txt ]; then \
         echo "Installing packages from requirements.txt..." && \
-        uv pip install --system --break-system-packages -r /opt/extensions/requirements.txt; \
+        uv pip install -r /opt/extensions/requirements.txt; \
     fi && \
     if ls /opt/extensions/packages/*.whl 1> /dev/null 2>&1; then \
         echo "Installing wheel files from packages/..." && \
-        uv pip install --system --break-system-packages /opt/extensions/packages/*.whl; \
+        uv pip install /opt/extensions/packages/*.whl; \
     fi
 
 # Workdir; no ENTRYPOINT (set per service in compose)
