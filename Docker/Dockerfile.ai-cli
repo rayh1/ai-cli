@@ -6,7 +6,7 @@ ARG ARG_PYTHON_VERSION
 
 # Basics + socat for the codex login bridge
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates bash curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release && \
+    git ca-certificates bash curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree && \
     rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
