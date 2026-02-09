@@ -47,8 +47,8 @@ RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
 RUN npm i -g @playwright/cli@${ARG_PLAYWRIGHT_CLI_VERSION} \
     && npx -p @playwright/cli@${ARG_PLAYWRIGHT_CLI_VERSION} playwright install-deps chromium
 
-# Copy MCP configuration files
-COPY mcp /opt/mcp
+# MCP scripts are optional; keep the directory for custom servers
+RUN mkdir -p /opt/mcp
 
 # Copy extensions directory and install custom Python packages
 COPY extensions /opt/extensions
