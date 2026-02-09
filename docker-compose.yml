@@ -6,9 +6,15 @@ services:
       dockerfile: Docker/Dockerfile.ai-cli
       args:
         - ARG_UV_VERSION=${UV_VERSION}
-        - ARG_PLAYWRIGHT_MCP_VERSION=${PLAYWRIGHT_MCP_VERSION}
         - ARG_PYTHON_VERSION=${PYTHON_VERSION}
+        - ARG_PLAYWRIGHT_CLI_VERSION=${PLAYWRIGHT_CLI_VERSION}
     working_dir: /workspace
+    environment:
+      - DISPLAY=host.docker.internal:0.0
+      - PLAYWRIGHT_MCP_CONFIG=/home/aiuser/playwright-cli.json
+      - PLAYWRIGHT_MCP_BROWSER=chromium
+      - PLAYWRIGHT_MCP_HEADLESS=false
+      - PLAYWRIGHT_CLI_VERSION=${PLAYWRIGHT_CLI_VERSION}
     volumes:
       # Mount the *caller's* CWD (set by wrapper) into /workspace
       - type: bind

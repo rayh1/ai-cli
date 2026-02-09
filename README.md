@@ -3,7 +3,7 @@
 Run **Claude**, **Codex**, and **GitHub Copilot** CLIs entirely inside Docker on Windows with:
 - ✅ **Persistent authentication & settings** via named volumes
 - ✅ **MCP (Model Context Protocol)** support with easy registration
-- ✅ **Headless browser automation** via Playwright MCP
+- ✅ **Browser automation** via Playwright CLI skills
 - ✅ **Short commands** from any directory
 - ✅ **Custom Python packages** via requirements.txt
 - ✅ **No local CLI installs required**
@@ -74,10 +74,10 @@ Enter `/login` in the CLI and follow the device code flow. Credentials persist i
 
 > **Note:** GitHub Copilot requires a Pro, Pro+, Business, or Enterprise subscription.
 
-### 5) Enable Playwright MCP (optional)
+### 5) Install Playwright CLI skills (recommended)
 
 ```powershell
-reg-playwright    # Registers Playwright MCP for all CLIs at once
+reg-playwright    # Installs Playwright CLI skills + browser, sets headed default
 ```
 
 ### 6) Start using it!
@@ -88,7 +88,7 @@ codex
 copilot
 
 # Try in the CLI prompt:
-# "Using the Playwright MCP server, open https://example.com and return the page title."
+# "Using playwright-cli, open https://example.com and return the page title."
 ```
 
 ---
@@ -100,8 +100,10 @@ copilot
 - **OpenAI Codex CLI** — With Windows OAuth helper (`codex-login`)
 - **GitHub Copilot CLI** — With JSON-based MCP configuration
 
+**Automation Skills:**
+- **Playwright CLI skills** — Browser automation via `playwright-cli`
+
 **MCP Servers:**
-- **Playwright MCP** — Headless Chromium for web automation
 - **Universal MCP registration tool** (`reg-mcp`) for any MCP server
 
 **Features:**
@@ -115,12 +117,12 @@ copilot
 ## 📖 Table of Contents
 
 - [Everyday Usage](#everyday-usage)
+- [Playwright CLI Skills](#playwright-cli-skills)
 - [MCP Server Management](#mcp-server-management)
-  - [Using the Universal MCP Registration Tool](#using-the-universal-mcp-registration-tool)
-  - [Quick Playwright Registration](#quick-playwright-registration)
-  - [Registering Custom MCP Servers](#registering-custom-mcp-servers)
-  - [Verifying MCP Registration](#verifying-mcp-registration)
-  - [MCP Security Warning](#mcp-security-warning)
+   - [Using the Universal MCP Registration Tool](#using-the-universal-mcp-registration-tool)
+   - [Registering Custom MCP Servers](#registering-custom-mcp-servers)
+   - [Verifying MCP Registration](#verifying-mcp-registration)
+   - [MCP Security Warning](#mcp-security-warning)
 - [Extending with Python Packages](#extending-with-python-packages)
 - [Persistence & Data](#persistence--data)
 - [Maintenance](#maintenance)
@@ -150,10 +152,35 @@ copilot
 copilot -p "analyze this code and suggest improvements"
 ```
 
-**Using MCP servers:**
+**Using Playwright CLI skills:**
 
 Ask any CLI to browse via Playwright:
-> "Using the Playwright MCP server, open https://example.com and return the page title."
+> "Using playwright-cli, open https://example.com and return the page title."
+
+MCP servers are still supported for non-Playwright tools; see the MCP Server Management section.
+
+---
+
+## Playwright CLI Skills
+
+Install Playwright CLI skills once per Docker volume:
+
+```powershell
+reg-playwright
+```
+
+This installs:
+- Playwright CLI skills into `~/.claude/skills/playwright-cli`
+- The Playwright Chromium browser into the persisted cache volume
+- A default config at `/home/aiuser/playwright-cli.json` (browser set to chromium, headed enabled)
+
+If you want headless mode for a single task, ask the CLI to pass `--headless` to `playwright-cli open`.
+
+Smoke test:
+
+```powershell
+claude -p "Use playwright-cli to open https://example.com and take a screenshot"
+```
 
 ---
 
@@ -175,9 +202,9 @@ reg-mcp --name <server-name> --command <cmd> [args...] [--env KEY=VALUE ...]
 
 **Examples:**
 
-1. **Register Playwright MCP (no environment variables):**
+1. **Register a local MCP server (no environment variables):**
    ```powershell
-   reg-mcp --name playwright --command python3 /opt/mcp/playwright-mcp.py
+   reg-mcp --name myserver --command python3 /opt/mcp/myserver.py
    ```
 
 2. **Register GitHub MCP with token:**
@@ -227,16 +254,6 @@ reg-mcp --name <server-name> --command <cmd> [args...] [--env KEY=VALUE ...]
    **Percent (`%`) handling on Windows:**
    - Both inline `--env` values and values inside `--env-file` ultimately pass through Windows tooling that treats `%` specially.
    - To reliably get a single `%` into the container (for formats like `%Y`, `%m`, etc.), always write `%%Y`, `%%m`, and similar sequences in your values. They will arrive inside the container as `%Y`, `%m`, etc.
-
-### Quick Playwright Registration
-
-Use the dedicated helper to register Playwright MCP for all CLIs at once:
-
-```powershell
-reg-playwright
-```
-
-This is equivalent to running `reg-mcp --name playwright --command python3 /opt/mcp/playwright-mcp.py`.
 
 ### Registering Custom MCP Servers
 
@@ -355,11 +372,13 @@ Add custom Python packages to the container by editing `extensions/requirements.
 
 ## Maintenance
 
-### Update CLIs / Playwright MCP
+### Update CLIs / Playwright CLI
 
 ```powershell
 docker compose build --no-cache
 ```
+
+After rebuilding, re-run `reg-playwright` to refresh skills and the browser.
 
 ### Reset authentication (wipe settings)
 
@@ -470,9 +489,7 @@ ai-cli/
 │   ├── requirements.txt        # PyPI packages to install
 │   └── packages/               # Local wheel files to install
 │       └── joplink-0.1.0-py3-none-any.whl
-├── mcp/
-│   ├── playwright-mcp.json     # Playwright MCP metadata
-│   └── playwright-mcp.py       # Playwright MCP server implementation
+├── mcp/                        # Optional MCP server scripts
 └── scripts/
     ├── ai-cli.cmd              # Generic AI CLI wrapper
     ├── claude.cmd              # Claude CLI wrapper
@@ -481,11 +498,11 @@ ai-cli/
     ├── codex-login.cmd         # Codex OAuth helper for Windows
     ├── reg-mcp.cmd             # Universal MCP registration wrapper
     ├── reg-mcp.py              # Universal MCP registration (Python)
-    └── reg-playwright.cmd      # Quick Playwright registration wrapper
+   └── reg-playwright.cmd      # Playwright CLI skills installer
 ```
 
 **Key files:**
-- **Dockerfile.ai-cli:** Installs all CLIs, Playwright MCP, Chromium, and extensions
+- **Dockerfile.ai-cli:** Installs all CLIs, Playwright CLI, Chromium deps, and extensions
 - **docker-compose.yml:** Defines services with named volumes for persistence
 - **reg-mcp.py:** Universal Python script for registering any MCP server
 - **Wrapper scripts (.cmd):** Invoke Docker Compose services from any directory

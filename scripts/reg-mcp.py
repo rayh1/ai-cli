@@ -6,9 +6,9 @@ Usage:
     python reg-mcp.py --name <server-name> --command <cmd> [args...] [--env KEY=VALUE ...]
 
 Examples:
-    python reg-mcp.py --name playwright --command python3 /opt/mcp/playwright-mcp.py
+    python reg-mcp.py --name myserver --command python3 /opt/mcp/server.py
     python reg-mcp.py --name github --command python3 /opt/mcp/github-mcp.py --env GITHUB_TOKEN=ghp_abc123
-    python reg-mcp.py --name myserver --command python3 /opt/mcp/server.py --env API_KEY=secret123 DB_URL=postgresql://...
+    python reg-mcp.py --name custom --command python3 /opt/mcp/custom.py --env API_KEY=secret123 DB_URL=postgresql://...
 """
 
 import argparse
@@ -28,9 +28,9 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python reg-mcp.py --name playwright --command python3 /opt/mcp/playwright-mcp.py
-  python reg-mcp.py --name github --command python3 /opt/mcp/github-mcp.py --env GITHUB_TOKEN=ghp_abc123
-  python reg-mcp.py --name custom --command python3 /opt/mcp/custom.py --env API_KEY=secret DB_PASS=pwd123
+    python reg-mcp.py --name myserver --command python3 /opt/mcp/server.py
+    python reg-mcp.py --name github --command python3 /opt/mcp/github-mcp.py --env GITHUB_TOKEN=ghp_abc123
+    python reg-mcp.py --name custom --command python3 /opt/mcp/custom.py --env API_KEY=secret DB_PASS=pwd123
 
 Security Warning:
   Environment variables are stored in PLAINTEXT in Docker volumes (ai-cli_home:/root).

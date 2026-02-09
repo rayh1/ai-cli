@@ -1,11 +1,8 @@
 @echo off
 REM -------------------------------
-REM Register Playwright MCP for all CLIs
-REM (Claude, Codex, Github Copilot)
-REM
-REM This is a simple wrapper that calls reg-mcp.py
-REM with the Playwright-specific settings.
+REM Install Playwright CLI skills and browser for all CLIs
+REM (Claude, Codex, GitHub Copilot)
 REM -------------------------------
-
-python "%~dp0reg-mcp.py" --name playwright --command python3 /opt/mcp/playwright-mcp.py
+set "REPO_ROOT=%~dp0.."
+docker compose -f "%REPO_ROOT%\docker-compose.yml" --project-directory "%REPO_ROOT%" run --rm --entrypoint bash ai-cli -lc "set -e; cd /home/aiuser; playwright-cli install --skills; npx --yes -p @playwright/cli@${PLAYWRIGHT_CLI_VERSION} playwright install chromium; printf \"%%s\\n\" \"{\\\"browser\\\":{\\\"browserName\\\":\\\"chromium\\\",\\\"launchOptions\\\":{\\\"headless\\\":false}}}\" > /home/aiuser/playwright-cli.json"
 exit /b %errorlevel%
