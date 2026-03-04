@@ -45,6 +45,9 @@ RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
 
 # Playwright CLI + browser dependencies (Chromium only to keep the image smaller)
 RUN npm i -g @playwright/cli@${ARG_PLAYWRIGHT_CLI_VERSION} \
+    && mv /usr/local/bin/playwright-cli /usr/local/bin/playwright-cli-bin \
+    && printf '%s\n' '#!/usr/bin/env bash' 'set -e' '' 'REAL_PLAYWRIGHT_CLI="/usr/local/bin/playwright-cli-bin"' '' 'if [ "${1:-}" = "open" ]; then' '  shift' '  has_browser=0' '  for arg in "$@"; do' '    case "$arg" in' '      --browser|--browser=*)' '        has_browser=1' '        ;;' '    esac' '  done' '' '  if [ "$has_browser" -eq 0 ]; then' '    exec "$REAL_PLAYWRIGHT_CLI" open --browser=chromium "$@"' '  fi' '  exec "$REAL_PLAYWRIGHT_CLI" open "$@"' 'fi' '' 'exec "$REAL_PLAYWRIGHT_CLI" "$@"' > /usr/local/bin/playwright-cli \
+    && chmod +x /usr/local/bin/playwright-cli \
     && npx -p @playwright/cli@${ARG_PLAYWRIGHT_CLI_VERSION} playwright install-deps chromium
 
 # MCP scripts are optional; keep the directory for custom servers
