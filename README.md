@@ -93,7 +93,15 @@ ai-shell
 
 # Start a shell in the same ai-cli image:
 ai-shell
+ai-shell --help
 ai-shell -lc "python /workspace/scripts/reg-mcp.py --help"
+ai-shell --root
+
+# Run any CLI wrapper as root when needed:
+claude --root
+
+# If you need to pass a literal --root to the CLI itself:
+claude -- --root
 ```
 
 ---
@@ -142,6 +150,7 @@ ai-shell -lc "python /workspace/scripts/reg-mcp.py --help"
 ```powershell
 claude
 claude -p "run unit tests and summarize failures" --output-format json
+claude --root
 ```
 
 **Codex:**
@@ -155,6 +164,13 @@ codex -p "refactor foo() and explain changes" --output-format json
 ```powershell
 copilot
 copilot -p "analyze this code and suggest improvements"
+```
+
+**ai-shell:**
+```powershell
+ai-shell
+ai-shell --root
+ai-shell --root -lc "whoami && id"
 ```
 
 **Using Playwright CLI skills:**
