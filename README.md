@@ -86,9 +86,14 @@ reg-playwright    # Installs Playwright CLI skills + browser, sets headed defaul
 claude
 codex
 copilot
+ai-shell
 
 # Try in the CLI prompt:
 # "Using playwright-cli, open https://example.com and return the page title."
+
+# Start a shell in the same ai-cli image:
+ai-shell
+ai-shell -lc "python /workspace/scripts/reg-mcp.py --help"
 ```
 
 ---
@@ -496,6 +501,7 @@ ai-cli/
     ├── codex.cmd               # Codex CLI wrapper
     ├── copilot.cmd             # GitHub Copilot CLI wrapper
     ├── codex-login.cmd         # Codex OAuth helper for Windows
+   ├── ai-shell.cmd            # Shell wrapper (bash in ai-cli container)
     ├── reg-mcp.cmd             # Universal MCP registration wrapper
     ├── reg-mcp.py              # Universal MCP registration (Python)
    └── reg-playwright.cmd      # Playwright CLI skills installer
