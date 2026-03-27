@@ -44,6 +44,13 @@ RUN uv venv /opt/venv
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+RUN printf '%s\n' \
+    'case ":$PATH:" in' \
+    '  *:/opt/venv/bin:*) ;;' \
+    '  *) export PATH="/opt/venv/bin:$PATH" ;;' \
+    'esac' \
+    > /etc/profile.d/ai-cli-venv-path.sh
+
 # Install pip into the venv so pip commands work
 RUN uv pip install pip
 

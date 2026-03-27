@@ -92,7 +92,7 @@ for /f "delims=" %%I in ('docker ps -aq -f "name=^/%CONTAINER_NAME%$"') do (
 :have_container_lookup
 if not defined EXISTING_ID (
 	REM Create a persistent container with a keepalive process.
-	docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% --entrypoint bash ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
+    docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% --entrypoint bash ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
 	if errorlevel 1 goto cleanup
 ) else (
 	set "IS_RUNNING="
@@ -100,7 +100,7 @@ if not defined EXISTING_ID (
 	if /I not "%IS_RUNNING%"=="true" docker start "%CONTAINER_NAME%" >nul
 )
 
-docker exec -it %ROOT_OPTS% -e TERM=xterm-256color -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 "%CONTAINER_NAME%" bash%BASH_ARGS%
+docker exec -it %ROOT_OPTS% -e TERM=xterm-256color -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -e PATH=/opt/venv/bin:/home/aiuser/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games "%CONTAINER_NAME%" bash%BASH_ARGS%
 goto cleanup
 
 :missing_name
