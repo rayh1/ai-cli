@@ -6,8 +6,15 @@ ARG ARG_PLAYWRIGHT_CLI_VERSION
 
 # Basics + socat for the codex login bridge
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates bash curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc && \
+    git ca-certificates bash curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc tmux && \
     rm -rf /var/lib/apt/lists/*
+
+RUN printf '%s\n' \
+    'set -g default-terminal "tmux-256color"' \
+    'set -as terminal-overrides ",xterm-256color:RGB"' \
+    'set -g mouse on' \
+    'set -g history-limit 100000' \
+    > /etc/tmux.conf
 
 # Install GitHub CLI
 RUN mkdir -p -m 755 /etc/apt/keyrings && \
