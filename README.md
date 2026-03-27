@@ -130,6 +130,7 @@ claude -- --root
 ## 📖 Table of Contents
 
 - [Everyday Usage](#everyday-usage)
+- [Persistent Claude Session](persistent-claude-session.md)
 - [Playwright CLI Skills](#playwright-cli-skills)
 - [MCP Server Management](#mcp-server-management)
    - [Using the Universal MCP Registration Tool](#using-the-universal-mcp-registration-tool)
@@ -169,9 +170,13 @@ copilot -p "analyze this code and suggest improvements"
 **ai-shell:**
 ```powershell
 ai-shell
+ai-shell aap
+ai-shell aap -lc "tmux attach || tmux new -s main"
 ai-shell --root
 ai-shell --root -lc "whoami && id"
 ```
+
+For a reusable named container plus tmux workflow, see [persistent-claude-session.md](persistent-claude-session.md).
 
 **Using Playwright CLI skills:**
 
@@ -320,11 +325,6 @@ codex mcp list
 docker compose run --rm --entrypoint bash ai-cli -c "cat ~/.copilot/mcp-config.json"
 ```
 
-Or use the helper:
-```powershell
-copilot bash -c "cat ~/.copilot/mcp-config.json"
-```
-
 ### MCP Security Warning
 
 ⚠️ **WARNING:** Environment variables are stored in **PLAINTEXT** in Docker volumes:
@@ -363,7 +363,7 @@ Add custom Python packages to the container by editing `extensions/requirements.
 
 1. Place your `.whl` file in `extensions/packages/`:
    ```
-   extensions/packages/joplink-0.1.0-py3-none-any.whl
+   extensions/packages/joplink-0.2.0-py3-none-any.whl
    ```
 
 2. Rebuild the image:
@@ -378,11 +378,11 @@ Add custom Python packages to the container by editing `extensions/requirements.
 ## Persistence & Data
 
 **What's stored where:**
-- **All CLIs:** `ai-cli_home` volume → `/root` (contains `~/.claude`, `~/.codex`, `~/.copilot`)
+- **All CLIs:** `ai-cli_home` volume → `/home/aiuser` (contains `~/.claude`, `~/.codex`, `~/.copilot`)
   - Claude: `~/.claude/...`, `~/.claude.json`
   - Codex: `~/.codex/auth.json`, `~/.codex/config.toml`
   - GitHub Copilot: `~/.copilot/config.json`, `~/.copilot/mcp-config.json`
-- **Playwright cache:** `playwright_cache` volume → `~/.cache/ms-playwright` (for faster cold starts)
+- **Playwright cache:** `playwright_cache` volume → `/home/aiuser/.cache/ms-playwright` (for faster cold starts)
 
 **Workspace mounting:**
 - Your current directory is automatically mounted to `/workspace` in the container
@@ -412,7 +412,7 @@ docker volume rm ai-cli_home
 
 **All CLI authentication & settings:**
 ```powershell
-docker run --rm -v ai-cli_home:/root busybox tar -C / -czf - root > ai-cli_home_backup.tgz
+docker run --rm -v ai-cli_home:/home/aiuser busybox tar -C /home -czf - aiuser > ai-cli_home_backup.tgz
 ```
 
 **Playwright browser cache:**
@@ -424,7 +424,7 @@ docker run --rm -v playwright_cache:/cache busybox tar -C / -czf - cache > playw
 
 **Restore authentication & settings:**
 ```powershell
-docker run --rm -v ai-cli_home:/root busybox tar -C / -xzf - < ai-cli_home_backup.tgz
+docker run --rm -v ai-cli_home:/home/aiuser busybox tar -C /home -xzf - < ai-cli_home_backup.tgz
 ```
 
 **Restore Playwright cache:**
@@ -482,7 +482,7 @@ docker run --rm -v playwright_cache:/cache busybox tar -C / -xzf - < playwright_
 
 **Solutions:**
 - GitHub Copilot uses JSON configuration, not CLI registration
-- Verify config exists: `copilot bash -c "cat ~/.copilot/mcp-config.json"`
+- Verify config exists: `docker compose run --rm --entrypoint bash ai-cli -c "cat ~/.copilot/mcp-config.json"`
 - Re-run `copilot-mcp-playwright` or `reg-playwright`
 - Check that the JSON is valid and includes your server
 
@@ -509,7 +509,7 @@ ai-cli/
 ├── extensions/
 │   ├── requirements.txt        # PyPI packages to install
 │   └── packages/               # Local wheel files to install
-│       └── joplink-0.1.0-py3-none-any.whl
+│       └── joplink-0.2.0-py3-none-any.whl
 ├── mcp/                        # Optional MCP server scripts
 └── scripts/
     ├── ai-cli.cmd              # Generic AI CLI wrapper
@@ -517,7 +517,7 @@ ai-cli/
     ├── codex.cmd               # Codex CLI wrapper
     ├── copilot.cmd             # GitHub Copilot CLI wrapper
     ├── codex-login.cmd         # Codex OAuth helper for Windows
-   ├── ai-shell.cmd            # Shell wrapper (bash in ai-cli container)
+   ├── ai-shell.cmd            # Shell wrapper (ephemeral or named persistent container)
     ├── reg-mcp.cmd             # Universal MCP registration wrapper
     ├── reg-mcp.py              # Universal MCP registration (Python)
    └── reg-playwright.cmd      # Playwright CLI skills installer
