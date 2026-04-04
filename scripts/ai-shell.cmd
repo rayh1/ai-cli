@@ -28,6 +28,7 @@ set "ROOT_OPTS="
 set "PORT_OPTS="
 set "PARSE_AI_SHELL_OPTIONS=1"
 set "CONTAINER_NAME="
+set "SSH_PASSWORD="
 set "BASH_ARGS="
 
 REM Parse leading ai-shell options, then optional container name
@@ -54,6 +55,13 @@ if "%PARSE_AI_SHELL_OPTIONS%"=="1" (
     if "%~2"=="" goto missing_port
     call :append_port_mapping "%~2"
     if errorlevel 1 goto cleanup
+    shift
+    shift
+    goto parse_leading
+  )
+  if /I "%~1"=="--ssh" (
+    if "%~2"=="" goto missing_ssh
+    set "SSH_PASSWORD=%~2"
     shift
     shift
     goto parse_leading
@@ -86,9 +94,16 @@ goto collect_bash_args
 
 :run_shell
 if defined CONTAINER_NAME goto run_named_shell
+if defined SSH_PASSWORD goto run_ephemeral_shell_with_ssh
 
 REM Default mode: ephemeral shell, same behavior as before
 docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm %ROOT_OPTS% %PORT_OPTS% --entrypoint bash ai-cli%BASH_ARGS%
+goto cleanup
+
+:run_ephemeral_shell_with_ssh
+set "TARGET_USER=aiuser"
+if defined ROOT_OPTS set "TARGET_USER=root"
+docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm --user root %PORT_OPTS% -e "AI_SHELL_SSH_PASSWORD=%SSH_PASSWORD%" -e "AI_SHELL_TARGET_USER=%TARGET_USER%" --entrypoint /usr/local/bin/ai-shell-entrypoint ai-cli%BASH_ARGS%
 goto cleanup
 
 :run_named_shell
@@ -101,17 +116,29 @@ for /f "delims=" %%I in ('docker ps -aq -f "name=^/%CONTAINER_NAME%$"') do (
 :have_container_lookup
 if not defined EXISTING_ID (
 	REM Create a persistent container with a keepalive process.
-    docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% %PORT_OPTS% --entrypoint bash ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
+  if defined SSH_PASSWORD (
+    set "TARGET_USER=aiuser"
+    if defined ROOT_OPTS set "TARGET_USER=root"
+        docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" --user root %PORT_OPTS% -e "AI_SHELL_SSH_PASSWORD=%SSH_PASSWORD%" -e "AI_SHELL_TARGET_USER=%TARGET_USER%" --entrypoint /usr/local/bin/ai-shell-entrypoint ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
+  ) else (
+        docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% %PORT_OPTS% --entrypoint bash ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
+  )
 	if errorlevel 1 goto cleanup
 ) else (
   if defined PORT_OPTS goto existing_container_ports_unsupported
 	set "IS_RUNNING="
 	for /f "delims=" %%R in ('docker inspect -f "{{.State.Running}}" "%CONTAINER_NAME%" 2^>nul') do set "IS_RUNNING=%%R"
 	if /I not "%IS_RUNNING%"=="true" docker start "%CONTAINER_NAME%" >nul
+  if defined SSH_PASSWORD call :enable_existing_container_ssh
+  if errorlevel 1 goto cleanup
 )
 
 docker exec -it %ROOT_OPTS% -e TERM=xterm-256color -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -e PATH=/opt/venv/bin:/home/aiuser/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games "%CONTAINER_NAME%" bash%BASH_ARGS%
 goto cleanup
+
+:enable_existing_container_ssh
+docker exec -u root -e "AI_SHELL_SSH_PASSWORD=%SSH_PASSWORD%" "%CONTAINER_NAME%" /usr/local/bin/ai-shell-enable-ssh
+exit /b %ERRORLEVEL%
 
 :append_port_mapping
 set "PORT_SPEC=%~1"
@@ -155,12 +182,17 @@ exit /b 1
 
 :missing_name
 echo [ERROR] Missing value for --name. >&2
-echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
+echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--ssh ^<password^>] [--name ^<container-name^>] [container-name] [bash args...] >&2
 exit /b 1
 
 :missing_port
 echo [ERROR] Missing value for --port. >&2
-echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
+echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--ssh ^<password^>] [--name ^<container-name^>] [container-name] [bash args...] >&2
+exit /b 1
+
+:missing_ssh
+echo [ERROR] Missing value for --ssh. >&2
+echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--ssh ^<password^>] [--name ^<container-name^>] [container-name] [bash args...] >&2
 exit /b 1
 
 :cleanup
@@ -172,9 +204,11 @@ set ROOT_OPTS=
 set PORT_OPTS=
 set PARSE_AI_SHELL_OPTIONS=
 set CONTAINER_NAME=
+set SSH_PASSWORD=
 set BASH_ARGS=
 set EXISTING_ID=
 set IS_RUNNING=
+set TARGET_USER=
 set PORT_SPEC=
 set PORT_SPEC_NORMALIZED=
 set CONTAINER_PORT=
@@ -183,7 +217,7 @@ set EXTRA_PORT_PART=
 exit /b %ERRORLEVEL%
 
 :show_help
-echo Usage: ai-shell [--root^|-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...]
+echo Usage: ai-shell [--root^|-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--ssh ^<password^>] [--name ^<container-name^>] [container-name] [bash args...]
 echo.
 echo Examples:
 echo   ai-shell
@@ -191,6 +225,8 @@ echo   ai-shell aap
 echo   ai-shell --port 8080;3000
 echo   ai-shell --port 8080:3000
 echo   ai-shell --port 8080;3000 --port 5173;5173
+echo   ai-shell --ssh pass --port 22:2222
+echo   ai-shell --name aap --ssh pass --port 22:2222
 echo   ai-shell --root
 echo   ai-shell --name aap
 echo   ai-shell aap -lc "tmux attach ^|^| tmux new -s main"
@@ -206,6 +242,8 @@ echo   With a name, creates/reuses that container and execs bash into it.
 echo   --port container;host or container:host publishes the container port to the host as host:container.
 echo   Repeat --port to publish multiple ports.
 echo   In PowerShell, prefer container:host, or quote container;host.
+echo   --ssh password starts sshd in the container and sets aiuser's password.
+echo   Use --port 22:hostPort to connect from the host with ssh aiuser@localhost -p hostPort.
 echo   For named containers, --port only applies when the container is first created.
 echo   This lets tmux sessions survive shell exit and be reattached later.
 echo   --root/-r runs the container as root.

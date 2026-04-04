@@ -176,6 +176,7 @@ ai-shell
 ai-shell aap
 ai-shell --port 8080:3000
 ai-shell --port 8080:3000 --port 5173:5173
+ai-shell --ssh pass --port 22:2222
 ai-shell aap -lc "tmux attach || tmux new -s main"
 ai-shell --root
 ai-shell --root -lc "whoami && id"
@@ -189,11 +190,14 @@ There is one parsing difference once you add more arguments: after `ai-shell <na
 
 In PowerShell, prefer the `container:host` form. If you use `container;host`, quote it because `;` is a statement separator.
 
+`--ssh <password>` starts an SSH server in the container and sets the password for user `aiuser`. Combine it with `--port 22:<host-port>` if you want to connect from the host.
+
 Example:
 ```powershell
 ai-shell aap --root        # passes --root to bash
 ai-shell --name aap --root # runs the named container as root
 ai-shell --port 8080:3000  # publishes host 3000 to container 8080
+ai-shell --ssh pass --port 22:2222
 ```
 
 For a reusable named container plus tmux workflow, see [persistent-claude-session.md](persistent-claude-session.md).
@@ -217,6 +221,30 @@ ai-shell --name md-preview --port 8080:3000 -lc "mdserver /workspace -p 8080"
 ```
 
 If `md-preview` already exists, its published ports are fixed. Remove and recreate it if you need a different host port mapping.
+
+## Container SSH
+
+If you need to SSH into the container itself, start it with `--ssh` and publish container port `22` to a host port:
+
+```powershell
+ai-shell --ssh pass --port 22:2222
+```
+
+You can then connect from the host with:
+
+```powershell
+ssh aiuser@localhost -p 2222
+```
+
+The password is the value passed to `--ssh`.
+
+For a reusable named container:
+
+```powershell
+ai-shell --name devbox --ssh pass --port 22:2222
+```
+
+If `devbox` already exists, port publishing is unchanged. Remove and recreate it if you need a different host SSH port.
 
 **Using Playwright CLI skills:**
 
