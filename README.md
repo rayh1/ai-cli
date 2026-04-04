@@ -95,6 +95,7 @@ ai-shell
 ai-shell
 ai-shell --help
 ai-shell -lc "python /workspace/scripts/reg-mcp.py --help"
+ai-shell -lc "mdserver /workspace -p 8080"
 ai-shell --root
 
 # Run any CLI wrapper as root when needed:
@@ -123,6 +124,7 @@ claude -- --root
 - Single Docker image for all CLIs
 - Named volumes for persistent auth, settings, and browser cache
 - Current directory auto-mounted to `/workspace` in container
+- Bundled helper commands such as `mdserver`
 - Extensible via `extensions/requirements.txt` or `.whl` packages
 
 ---
@@ -130,6 +132,7 @@ claude -- --root
 ## 📖 Table of Contents
 
 - [Everyday Usage](#everyday-usage)
+- [Markdown Preview Server](#markdown-preview-server)
 - [Persistent Claude Session](persistent-claude-session.md)
 - [Playwright CLI Skills](#playwright-cli-skills)
 - [MCP Server Management](#mcp-server-management)
@@ -171,8 +174,8 @@ copilot -p "analyze this code and suggest improvements"
 ```powershell
 ai-shell
 ai-shell aap
-ai-shell --port 8080;3000
-ai-shell --port 8080;3000 --port 5173;5173
+ai-shell --port 8080:3000
+ai-shell --port 8080:3000 --port 5173:5173
 ai-shell aap -lc "tmux attach || tmux new -s main"
 ai-shell --root
 ai-shell --root -lc "whoami && id"
@@ -182,16 +185,38 @@ ai-shell --root -lc "whoami && id"
 
 There is one parsing difference once you add more arguments: after `ai-shell <name>`, the rest is passed to `bash`, while `ai-shell --name <name>` continues parsing later `ai-shell` options such as `--root`.
 
-`--port <container-port;host-port>` publishes a container port to the host as `host:container`. You can repeat `--port` multiple times. For named containers, published ports are only applied when the container is first created.
+`--port <container-port;host-port>` and `--port <container-port:host-port>` both publish a container port to the host as `host:container`. You can repeat `--port` multiple times. For named containers, published ports are only applied when the container is first created.
+
+In PowerShell, prefer the `container:host` form. If you use `container;host`, quote it because `;` is a statement separator.
 
 Example:
 ```powershell
 ai-shell aap --root        # passes --root to bash
 ai-shell --name aap --root # runs the named container as root
-ai-shell --port 8080;3000  # publishes host 3000 to container 8080
+ai-shell --port 8080:3000  # publishes host 3000 to container 8080
 ```
 
 For a reusable named container plus tmux workflow, see [persistent-claude-session.md](persistent-claude-session.md).
+
+## Markdown Preview Server
+
+The image includes a bundled `mdserver` command that serves a directory of markdown files and redirects file views through the mindspark.nu markdown viewer.
+
+Basic example from PowerShell:
+
+```powershell
+ai-shell --port 8080:3000 -lc "mdserver /workspace -p 8080"
+```
+
+This starts `mdserver` on container port `8080` and publishes it on host port `3000`, so you can open `http://localhost:3000` in your browser.
+
+If you want to keep the server in a reusable named container:
+
+```powershell
+ai-shell --name md-preview --port 8080:3000 -lc "mdserver /workspace -p 8080"
+```
+
+If `md-preview` already exists, its published ports are fixed. Remove and recreate it if you need a different host port mapping.
 
 **Using Playwright CLI skills:**
 

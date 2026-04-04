@@ -67,6 +67,10 @@ RUN npm i -g @playwright/cli@${ARG_PLAYWRIGHT_CLI_VERSION} \
 # MCP scripts are optional; keep the directory for custom servers
 RUN mkdir -p /opt/mcp
 
+# Bundle project helper scripts that should always be available in the image
+COPY scripts/mdserver.py /usr/local/bin/mdserver
+RUN chmod +x /usr/local/bin/mdserver
+
 # Copy extensions directory and install custom Python packages
 COPY extensions /opt/extensions
 RUN if [ -s /opt/extensions/requirements.txt ]; then \

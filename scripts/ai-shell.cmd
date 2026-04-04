@@ -115,10 +115,11 @@ goto cleanup
 
 :append_port_mapping
 set "PORT_SPEC=%~1"
+set "PORT_SPEC_NORMALIZED=%PORT_SPEC::=;%"
 set "CONTAINER_PORT="
 set "HOST_PORT="
 set "EXTRA_PORT_PART="
-for /f "tokens=1,2,* delims=;" %%A in ("%PORT_SPEC%") do (
+for /f "tokens=1,2,* delims=;" %%A in ("%PORT_SPEC_NORMALIZED%") do (
   set "CONTAINER_PORT=%%~A"
   set "HOST_PORT=%%~B"
   set "EXTRA_PORT_PART=%%~C"
@@ -132,14 +133,16 @@ echo(%HOST_PORT%| findstr /R "^[0-9][0-9]*$" >nul
 if errorlevel 1 goto invalid_port
 set "PORT_OPTS=%PORT_OPTS% --publish %HOST_PORT%:%CONTAINER_PORT%"
 set "PORT_SPEC="
+set "PORT_SPEC_NORMALIZED="
 set "CONTAINER_PORT="
 set "HOST_PORT="
 set "EXTRA_PORT_PART="
 exit /b 0
 
 :invalid_port
-echo [ERROR] Invalid --port value "%PORT_SPEC%". Expected containerPort;hostPort, for example 8080;3000. >&2
+echo [ERROR] Invalid --port value "%PORT_SPEC%". Expected containerPort;hostPort or containerPort:hostPort, for example 8080;3000 or 8080:3000. >&2
 set "PORT_SPEC="
+set "PORT_SPEC_NORMALIZED="
 set "CONTAINER_PORT="
 set "HOST_PORT="
 set "EXTRA_PORT_PART="
@@ -152,12 +155,12 @@ exit /b 1
 
 :missing_name
 echo [ERROR] Missing value for --name. >&2
-echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
+echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
 exit /b 1
 
 :missing_port
 echo [ERROR] Missing value for --port. >&2
-echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
+echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
 exit /b 1
 
 :cleanup
@@ -173,18 +176,20 @@ set BASH_ARGS=
 set EXISTING_ID=
 set IS_RUNNING=
 set PORT_SPEC=
+set PORT_SPEC_NORMALIZED=
 set CONTAINER_PORT=
 set HOST_PORT=
 set EXTRA_PORT_PART=
 exit /b %ERRORLEVEL%
 
 :show_help
-echo Usage: ai-shell [--root^|-r] [--port ^<container-port;host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...]
+echo Usage: ai-shell [--root^|-r] [--port ^<container-port;host-port^|container-port:host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...]
 echo.
 echo Examples:
 echo   ai-shell
 echo   ai-shell aap
 echo   ai-shell --port 8080;3000
+echo   ai-shell --port 8080:3000
 echo   ai-shell --port 8080;3000 --port 5173;5173
 echo   ai-shell --root
 echo   ai-shell --name aap
@@ -198,8 +203,9 @@ echo   [container-name] is shorthand for --name ^<container-name^>.
 echo   After ai-shell [container-name], remaining args go to bash.
 echo   After ai-shell --name ^<container-name^>, ai-shell still parses later options such as --root.
 echo   With a name, creates/reuses that container and execs bash into it.
-echo   --port container;host publishes the container port to the host as host:container.
+echo   --port container;host or container:host publishes the container port to the host as host:container.
 echo   Repeat --port to publish multiple ports.
+echo   In PowerShell, prefer container:host, or quote container;host.
 echo   For named containers, --port only applies when the container is first created.
 echo   This lets tmux sessions survive shell exit and be reattached later.
 echo   --root/-r runs the container as root.
