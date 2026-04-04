@@ -176,6 +176,16 @@ ai-shell --root
 ai-shell --root -lc "whoami && id"
 ```
 
+`ai-shell <name>` is shorthand for `ai-shell --name <name>` when you are only providing the container name.
+
+There is one parsing difference once you add more arguments: after `ai-shell <name>`, the rest is passed to `bash`, while `ai-shell --name <name>` continues parsing later `ai-shell` options such as `--root`.
+
+Example:
+```powershell
+ai-shell aap --root        # passes --root to bash
+ai-shell --name aap --root # runs the named container as root
+```
+
 For a reusable named container plus tmux workflow, see [persistent-claude-session.md](persistent-claude-session.md).
 
 **Using Playwright CLI skills:**

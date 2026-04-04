@@ -7,7 +7,9 @@ This workflow is for keeping one long-lived Claude session running inside Docker
 There are two ai-shell modes:
 
 - `ai-shell` without a name: starts an ephemeral shell and removes the container when you exit.
-- `ai-shell <name>`: creates or reuses a named container and opens `bash` inside it.
+- `ai-shell <name>`: creates or reuses a named container and opens `bash` inside it. This is shorthand for `ai-shell --name <name>` when you are only specifying the container name.
+
+One nuance: after `ai-shell <name>`, the remaining arguments are passed to `bash`. After `ai-shell --name <name>`, later `ai-shell` options are still parsed. For example, `ai-shell claude-main --root` passes `--root` to `bash`, while `ai-shell --name claude-main --root` runs the named container as root.
 
 When you combine a named container with `tmux`, you get two layers of persistence:
 

@@ -136,6 +136,8 @@ echo.
 echo Notes:
 echo   Without a name, runs an ephemeral shell and removes the container on exit.
 echo   [container-name] is shorthand for --name ^<container-name^>.
+echo   After ai-shell [container-name], remaining args go to bash.
+echo   After ai-shell --name ^<container-name^>, ai-shell still parses later options such as --root.
 echo   With a name, creates/reuses that container and execs bash into it.
 echo   This lets tmux sessions survive shell exit and be reattached later.
 echo   --root/-r runs the container as root.
