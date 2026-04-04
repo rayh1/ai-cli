@@ -132,6 +132,7 @@ claude -- --root
 ## 📖 Table of Contents
 
 - [Everyday Usage](#everyday-usage)
+- [Access Point and Multiplexer Scenarios](access-point-and-multiplexer-scenarios.md)
 - [Markdown Preview Server](#markdown-preview-server)
 - [Persistent Claude Session](persistent-claude-session.md)
 - [Playwright CLI Skills](#playwright-cli-skills)
