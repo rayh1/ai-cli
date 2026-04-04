@@ -171,6 +171,8 @@ copilot -p "analyze this code and suggest improvements"
 ```powershell
 ai-shell
 ai-shell aap
+ai-shell --port 8080;3000
+ai-shell --port 8080;3000 --port 5173;5173
 ai-shell aap -lc "tmux attach || tmux new -s main"
 ai-shell --root
 ai-shell --root -lc "whoami && id"
@@ -180,10 +182,13 @@ ai-shell --root -lc "whoami && id"
 
 There is one parsing difference once you add more arguments: after `ai-shell <name>`, the rest is passed to `bash`, while `ai-shell --name <name>` continues parsing later `ai-shell` options such as `--root`.
 
+`--port <container-port;host-port>` publishes a container port to the host as `host:container`. You can repeat `--port` multiple times. For named containers, published ports are only applied when the container is first created.
+
 Example:
 ```powershell
 ai-shell aap --root        # passes --root to bash
 ai-shell --name aap --root # runs the named container as root
+ai-shell --port 8080;3000  # publishes host 3000 to container 8080
 ```
 
 For a reusable named container plus tmux workflow, see [persistent-claude-session.md](persistent-claude-session.md).

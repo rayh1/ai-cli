@@ -25,6 +25,7 @@ set "COMPOSE_FILE=%REPO_ROOT%\docker-compose.yml"
 set "HOST_PWD=%CD%"
 
 set "ROOT_OPTS="
+set "PORT_OPTS="
 set "PARSE_AI_SHELL_OPTIONS=1"
 set "CONTAINER_NAME="
 set "BASH_ARGS="
@@ -46,6 +47,14 @@ if "%PARSE_AI_SHELL_OPTIONS%"=="1" (
   )
   if /I "%~1"=="-r" (
     set "ROOT_OPTS=%ROOT_OPTS% --user root"
+    shift
+    goto parse_leading
+  )
+  if /I "%~1"=="--port" (
+    if "%~2"=="" goto missing_port
+    call :append_port_mapping "%~2"
+    if errorlevel 1 goto cleanup
+    shift
     shift
     goto parse_leading
   )
@@ -79,7 +88,7 @@ goto collect_bash_args
 if defined CONTAINER_NAME goto run_named_shell
 
 REM Default mode: ephemeral shell, same behavior as before
-docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm %ROOT_OPTS% --entrypoint bash ai-cli%BASH_ARGS%
+docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm %ROOT_OPTS% %PORT_OPTS% --entrypoint bash ai-cli%BASH_ARGS%
 goto cleanup
 
 :run_named_shell
@@ -92,9 +101,10 @@ for /f "delims=" %%I in ('docker ps -aq -f "name=^/%CONTAINER_NAME%$"') do (
 :have_container_lookup
 if not defined EXISTING_ID (
 	REM Create a persistent container with a keepalive process.
-    docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% --entrypoint bash ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
+    docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% %PORT_OPTS% --entrypoint bash ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
 	if errorlevel 1 goto cleanup
 ) else (
+  if defined PORT_OPTS goto existing_container_ports_unsupported
 	set "IS_RUNNING="
 	for /f "delims=" %%R in ('docker inspect -f "{{.State.Running}}" "%CONTAINER_NAME%" 2^>nul') do set "IS_RUNNING=%%R"
 	if /I not "%IS_RUNNING%"=="true" docker start "%CONTAINER_NAME%" >nul
@@ -103,9 +113,51 @@ if not defined EXISTING_ID (
 docker exec -it %ROOT_OPTS% -e TERM=xterm-256color -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -e PATH=/opt/venv/bin:/home/aiuser/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games "%CONTAINER_NAME%" bash%BASH_ARGS%
 goto cleanup
 
+:append_port_mapping
+set "PORT_SPEC=%~1"
+set "CONTAINER_PORT="
+set "HOST_PORT="
+set "EXTRA_PORT_PART="
+for /f "tokens=1,2,* delims=;" %%A in ("%PORT_SPEC%") do (
+  set "CONTAINER_PORT=%%~A"
+  set "HOST_PORT=%%~B"
+  set "EXTRA_PORT_PART=%%~C"
+)
+if not defined CONTAINER_PORT goto invalid_port
+if not defined HOST_PORT goto invalid_port
+if defined EXTRA_PORT_PART goto invalid_port
+echo(%CONTAINER_PORT%| findstr /R "^[0-9][0-9]*$" >nul
+if errorlevel 1 goto invalid_port
+echo(%HOST_PORT%| findstr /R "^[0-9][0-9]*$" >nul
+if errorlevel 1 goto invalid_port
+set "PORT_OPTS=%PORT_OPTS% --publish %HOST_PORT%:%CONTAINER_PORT%"
+set "PORT_SPEC="
+set "CONTAINER_PORT="
+set "HOST_PORT="
+set "EXTRA_PORT_PART="
+exit /b 0
+
+:invalid_port
+echo [ERROR] Invalid --port value "%PORT_SPEC%". Expected containerPort;hostPort, for example 8080;3000. >&2
+set "PORT_SPEC="
+set "CONTAINER_PORT="
+set "HOST_PORT="
+set "EXTRA_PORT_PART="
+exit /b 1
+
+:existing_container_ports_unsupported
+echo [ERROR] Container "%CONTAINER_NAME%" already exists; --port only applies when creating a container. >&2
+echo         Remove and recreate it if you need different published ports. >&2
+exit /b 1
+
 :missing_name
 echo [ERROR] Missing value for --name. >&2
-echo        Usage: ai-shell [--root^-r] [--name ^<container-name^>] [container-name] [bash args...] >&2
+echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
+exit /b 1
+
+:missing_port
+echo [ERROR] Missing value for --port. >&2
+echo        Usage: ai-shell [--root^-r] [--port ^<container-port;host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...] >&2
 exit /b 1
 
 :cleanup
@@ -114,19 +166,26 @@ set REPO_ROOT=
 set COMPOSE_FILE=
 set HOST_PWD=
 set ROOT_OPTS=
+set PORT_OPTS=
 set PARSE_AI_SHELL_OPTIONS=
 set CONTAINER_NAME=
 set BASH_ARGS=
 set EXISTING_ID=
 set IS_RUNNING=
+set PORT_SPEC=
+set CONTAINER_PORT=
+set HOST_PORT=
+set EXTRA_PORT_PART=
 exit /b %ERRORLEVEL%
 
 :show_help
-echo Usage: ai-shell [--root^|-r] [--name ^<container-name^>] [container-name] [bash args...]
+echo Usage: ai-shell [--root^|-r] [--port ^<container-port;host-port^> ...] [--name ^<container-name^>] [container-name] [bash args...]
 echo.
 echo Examples:
 echo   ai-shell
 echo   ai-shell aap
+echo   ai-shell --port 8080;3000
+echo   ai-shell --port 8080;3000 --port 5173;5173
 echo   ai-shell --root
 echo   ai-shell --name aap
 echo   ai-shell aap -lc "tmux attach ^|^| tmux new -s main"
@@ -139,6 +198,9 @@ echo   [container-name] is shorthand for --name ^<container-name^>.
 echo   After ai-shell [container-name], remaining args go to bash.
 echo   After ai-shell --name ^<container-name^>, ai-shell still parses later options such as --root.
 echo   With a name, creates/reuses that container and execs bash into it.
+echo   --port container;host publishes the container port to the host as host:container.
+echo   Repeat --port to publish multiple ports.
+echo   For named containers, --port only applies when the container is first created.
 echo   This lets tmux sessions survive shell exit and be reattached later.
 echo   --root/-r runs the container as root.
 echo   Use -- to stop ai-shell option parsing and pass the rest to bash.

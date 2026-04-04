@@ -11,6 +11,8 @@ There are two ai-shell modes:
 
 One nuance: after `ai-shell <name>`, the remaining arguments are passed to `bash`. After `ai-shell --name <name>`, later `ai-shell` options are still parsed. For example, `ai-shell claude-main --root` passes `--root` to `bash`, while `ai-shell --name claude-main --root` runs the named container as root.
 
+If you use `--port <container-port;host-port>`, those published ports are applied when the container is created. If the named container already exists, `ai-shell` will reuse it as-is, so changing published ports requires removing and recreating that container.
+
 When you combine a named container with `tmux`, you get two layers of persistence:
 
 - The named container stays available across shell disconnects.
