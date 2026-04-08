@@ -177,6 +177,7 @@ ai-shell
 ai-shell aap
 ai-shell --port 8080:3000
 ai-shell --port 8080:3000 --port 5173:5173
+ai-shell --cron
 ai-shell --ssh pass --port 22:2222
 ai-shell aap -lc "tmux attach || tmux new -s main"
 ai-shell --root
@@ -191,6 +192,8 @@ There is one parsing difference once you add more arguments: after `ai-shell <na
 
 In PowerShell, prefer the `container:host` form. If you use `container;host`, quote it because `;` is a statement separator.
 
+`--cron` starts the cron daemon in the container. Cron uses the container's default crontabs under `/var/spool`.
+
 `--ssh <password>` starts an SSH server in the container and sets the password for user `aiuser`. Combine it with `--port 22:<host-port>` if you want to connect from the host.
 
 Example:
@@ -198,6 +201,7 @@ Example:
 ai-shell aap --root        # passes --root to bash
 ai-shell --name aap --root # runs the named container as root
 ai-shell --port 8080:3000  # publishes host 3000 to container 8080
+ai-shell --cron
 ai-shell --ssh pass --port 22:2222
 ```
 
@@ -246,6 +250,25 @@ ai-shell --name devbox --ssh pass --port 22:2222
 ```
 
 If `devbox` already exists, port publishing is unchanged. Remove and recreate it if you need a different host SSH port.
+
+## Container Cron
+
+If you need cron inside the container, start `ai-shell` with `--cron`:
+
+```powershell
+ai-shell --cron
+```
+
+This starts the Debian `cron` daemon before dropping into the interactive shell. It works for both ephemeral and named `ai-shell` containers.
+
+Cron uses the container's default crontabs under `/var/spool`. For example, inside the container:
+
+```bash
+crontab -e
+crontab -l
+```
+
+If you recreate a container, its crontab state is recreated with it rather than being restored from a separate file.
 
 **Using Playwright CLI skills:**
 
