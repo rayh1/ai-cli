@@ -32,6 +32,32 @@ set "CRON_ENABLED="
 set "SSH_PASSWORD="
 set "BASH_ARGS="
 
+goto parse_leading
+
+:parse_port_option
+set "PORT_SPEC=%~1"
+set "CONTAINER_PORT="
+set "HOST_PORT="
+set "EXTRA_PORT_PART="
+for /f "tokens=1,2,* delims=:;" %%A in ("%~1") do (
+  set "CONTAINER_PORT=%%~A"
+  set "HOST_PORT=%%~B"
+  set "EXTRA_PORT_PART=%%~C"
+)
+if not defined CONTAINER_PORT goto invalid_port
+if not defined HOST_PORT goto invalid_port
+if defined EXTRA_PORT_PART goto invalid_port
+echo(%CONTAINER_PORT%| findstr /R "^[0-9][0-9]*$" >nul
+if errorlevel 1 goto invalid_port
+echo(%HOST_PORT%| findstr /R "^[0-9][0-9]*$" >nul
+if errorlevel 1 goto invalid_port
+set "PORT_OPTS=%PORT_OPTS% --publish %HOST_PORT%:%CONTAINER_PORT%"
+set "PORT_SPEC="
+set "CONTAINER_PORT="
+set "HOST_PORT="
+set "EXTRA_PORT_PART="
+exit /b 0
+
 REM Parse leading ai-shell options, then optional container name
 :parse_leading
 if "%~1"=="" goto run_shell
@@ -54,7 +80,7 @@ if "%PARSE_AI_SHELL_OPTIONS%"=="1" (
   )
   if /I "%~1"=="--port" (
     if "%~2"=="" goto missing_port
-    call :append_port_mapping "%~2"
+    call :parse_port_option "%~2"
     if errorlevel 1 goto cleanup
     shift
     shift
@@ -94,9 +120,25 @@ goto collect_bash_args
 
 :collect_bash_args
 if "%~1"=="" goto run_shell
-set "BASH_ARGS=%BASH_ARGS% %1"
+call :append_bash_arg "%~1"
 shift
 goto collect_bash_args
+
+:append_bash_arg
+setlocal EnableDelayedExpansion
+set "CURRENT_ARG=%~1"
+
+set "CURRENT_ARG=!CURRENT_ARG:^=^^!"
+set "CURRENT_ARG=!CURRENT_ARG:|=^|!"
+set "CURRENT_ARG=!CURRENT_ARG:&=^&!"
+set "CURRENT_ARG=!CURRENT_ARG:<=^<!"
+set "CURRENT_ARG=!CURRENT_ARG:>=^>!"
+set "CURRENT_ARG=!CURRENT_ARG:(=^(!"
+set "CURRENT_ARG=!CURRENT_ARG:)=^)!"
+set CURRENT_ARG="!CURRENT_ARG!"
+
+endlocal & set "BASH_ARGS=%BASH_ARGS% %CURRENT_ARG%"
+exit /b 0
 
 :run_shell
 if defined CONTAINER_NAME goto run_named_shell
@@ -176,36 +218,9 @@ exit /b %ERRORLEVEL%
 docker exec -u root "%CONTAINER_NAME%" /usr/local/bin/ai-shell-enable-cron
 exit /b %ERRORLEVEL%
 
-:append_port_mapping
-set "PORT_SPEC=%~1"
-set "PORT_SPEC_NORMALIZED=%PORT_SPEC::=;%"
-set "CONTAINER_PORT="
-set "HOST_PORT="
-set "EXTRA_PORT_PART="
-for /f "tokens=1,2,* delims=;" %%A in ("%PORT_SPEC_NORMALIZED%") do (
-  set "CONTAINER_PORT=%%~A"
-  set "HOST_PORT=%%~B"
-  set "EXTRA_PORT_PART=%%~C"
-)
-if not defined CONTAINER_PORT goto invalid_port
-if not defined HOST_PORT goto invalid_port
-if defined EXTRA_PORT_PART goto invalid_port
-echo(%CONTAINER_PORT%| findstr /R "^[0-9][0-9]*$" >nul
-if errorlevel 1 goto invalid_port
-echo(%HOST_PORT%| findstr /R "^[0-9][0-9]*$" >nul
-if errorlevel 1 goto invalid_port
-set "PORT_OPTS=%PORT_OPTS% --publish %HOST_PORT%:%CONTAINER_PORT%"
-set "PORT_SPEC="
-set "PORT_SPEC_NORMALIZED="
-set "CONTAINER_PORT="
-set "HOST_PORT="
-set "EXTRA_PORT_PART="
-exit /b 0
-
 :invalid_port
 echo [ERROR] Invalid --port value "%PORT_SPEC%". Expected containerPort;hostPort or containerPort:hostPort, for example 8080;3000 or 8080:3000. >&2
 set "PORT_SPEC="
-set "PORT_SPEC_NORMALIZED="
 set "CONTAINER_PORT="
 set "HOST_PORT="
 set "EXTRA_PORT_PART="
@@ -247,7 +262,6 @@ set EXISTING_ID=
 set IS_RUNNING=
 set TARGET_USER=
 set PORT_SPEC=
-set PORT_SPEC_NORMALIZED=
 set CONTAINER_PORT=
 set HOST_PORT=
 set EXTRA_PORT_PART=
