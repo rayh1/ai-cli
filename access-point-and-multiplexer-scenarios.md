@@ -8,6 +8,34 @@ This note describes three ways to keep long-running CLI sessions reachable later
 
 Both the SSH entry point and the terminal multiplexer live on the Windows workstation. In this setup you do not need `ai-shell` for session persistence. You can run `claude`, `codex`, or `copilot` directly on the workstation inside `psmux`.
 
+### PlantUML
+
+In this model, both the SSH server and the terminal multiplexer are on the workstation.
+
+```plantuml
+@startuml
+title Scenario 1 - SSH server on workstation, multiplexer on workstation
+
+actor "Remote user" as User
+
+node "Windows workstation" as Workstation {
+	component "SSH server" as WorkstationSsh
+	component "psmux session" as Psmux
+	component "CLI\n(claude / codex / copilot)" as Cli
+}
+
+User --> WorkstationSsh : SSH login
+WorkstationSsh --> Psmux : attach or create session
+Psmux --> Cli : run or resume CLI
+
+note right of Workstation
+No container is required for persistence.
+The live session stays on the workstation.
+end note
+
+@enduml
+```
+
 ### Preparing Setup
 
 Make sure the workstation is reachable over SSH.
@@ -43,6 +71,39 @@ psmux attach -t claude
 ### Overview
 
 The workstation is still the SSH entry point, but the persistent terminal multiplexer lives inside a persistent container. This is the standard `ai-shell <name>` plus `tmux` pattern.
+
+### PlantUML
+
+In this model, SSH terminates on the workstation, then you enter the persistent container and attach to `tmux` there.
+
+```plantuml
+@startuml
+title Scenario 2 - SSH server on workstation, multiplexer in container
+
+actor "Remote user" as User
+
+node "Windows workstation" as Workstation {
+	component "SSH server" as WorkstationSsh
+	component "ai-shell\n(named container entry)" as AiShell
+
+	node "Persistent Docker container" as Container {
+		component "tmux session" as Tmux
+		component "CLI\n(claude / codex / copilot)" as Cli
+	}
+}
+
+User --> WorkstationSsh : SSH login
+WorkstationSsh --> AiShell : run ai-shell <name>
+AiShell --> Tmux : attach or create session
+Tmux --> Cli : run or resume CLI
+
+note right of Container
+The workstation is the access point.
+The persistent interactive session lives in the container.
+end note
+
+@enduml
+```
 
 ### Preparing Setup
 
@@ -93,6 +154,39 @@ tmux a -t claude
 ### Overview
 
 Both the SSH entry point and the terminal multiplexer live inside the container. The workstation only hosts Docker and forwards a host port to container port `22`. This is the `ai-shell --name ... --ssh ... --port 22:<host-port>` pattern.
+
+### PlantUML
+
+In this model, the SSH server and the terminal multiplexer are both inside the persistent container.
+
+```plantuml
+@startuml
+title Scenario 3 - SSH server in container, multiplexer in container
+
+actor "Remote user" as User
+
+node "Windows workstation" as Workstation {
+	component "Docker port forward\n<host-port> -> 22" as PortForward
+
+	node "Persistent Docker container" as Container {
+		component "SSH server" as ContainerSsh
+		component "tmux session" as Tmux
+		component "CLI\n(claude / codex / copilot)" as Cli
+	}
+}
+
+User --> PortForward : SSH to workstation:<host-port>
+PortForward --> ContainerSsh : forward TCP 22
+ContainerSsh --> Tmux : attach or create session
+Tmux --> Cli : run or resume CLI
+
+note right of Container
+The workstation only forwards the port.
+The live SSH endpoint and session state are both in the container.
+end note
+
+@enduml
+```
 
 ### Preparing Setup
 
