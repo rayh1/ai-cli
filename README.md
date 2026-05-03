@@ -306,17 +306,19 @@ claude -p "Use playwright-cli to open https://example.com and take a screenshot"
 
 ### Using the Universal MCP Registration Tool
 
-The `reg-mcp` tool simplifies registering any MCP server across all three CLIs (Claude, Codex, and GitHub Copilot) with optional environment variable support.
+The `reg-mcp` tool simplifies registering or unregistering MCP servers across all three CLIs (Claude, Codex, and GitHub Copilot) with optional environment variable support.
 
 **Basic syntax:**
 ```powershell
 reg-mcp --name <server-name> --command <cmd> [args...] [--env KEY=VALUE ...]
+reg-mcp --name <server-name> --remove
 ```
 
 **How it works:**
 - **Claude & Codex:** Registers via `<cli> mcp add <name> -- <command>`
   - With environment variables, wraps command in `bash -c "export VAR=val; <command>"`
-- **GitHub Copilot:** Creates/updates `~/.copilot/mcp-config.json` with proper configuration
+- **GitHub Copilot:** Creates/updates `~/.copilot/mcp-config.json` and preserves other configured MCP servers
+- **Unregistering:** Removes the named MCP server from Claude, Codex, and GitHub Copilot
 
 **Examples:**
 
@@ -346,7 +348,12 @@ reg-mcp --name <server-name> --command <cmd> [args...] [--env KEY=VALUE ...]
    reg-mcp --name custom --command python3 /opt/mcp/server.py --port 8080 --debug
    ```
 
-5. **Complex environment values (JSON, `%Y` formats, etc.) via `--env-file`:**
+5. **Unregister a server:**
+   ```powershell
+   reg-mcp --name myserver --remove
+   ```
+
+6. **Complex environment values (JSON, `%Y` formats, etc.) via `--env-file`:**
 
     For complex values that include quotes, brackets, or percent formats (like `Journal/%Y/%m/%Y-%m-%d`), use an env file to avoid Windows shell quoting issues:
 
@@ -392,6 +399,11 @@ To add your own MCP server:
 3. **With environment variables (if needed):**
    ```powershell
    reg-mcp --name myserver --command python3 /opt/mcp/myserver.py --env 'API_KEY=your_key'
+   ```
+
+4. **Unregister it later if needed:**
+   ```powershell
+   reg-mcp --name myserver --remove
    ```
 
    Your MCP Python script should read environment variables like:
