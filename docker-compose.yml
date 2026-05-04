@@ -8,6 +8,7 @@ services:
         - ARG_UV_VERSION=${UV_VERSION}
         - ARG_PYTHON_VERSION=${PYTHON_VERSION}
         - ARG_PLAYWRIGHT_CLI_VERSION=${PLAYWRIGHT_CLI_VERSION}
+        - ARG_HIMALAYA_VERSION=${HIMALAYA_VERSION}
     working_dir: /workspace
     environment:
       - DISPLAY=host.docker.internal:0.0
