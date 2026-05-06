@@ -11,6 +11,8 @@ requests
 Pillow
 pypdf
 pypdf2
+khal
+vdirsyncer
 #
 # For local wheel files, place them in the packages/ subdirectory.
 # Example: packages/joplink-0.1.0-py3-none-any.whl

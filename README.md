@@ -117,6 +117,10 @@ claude -- --root
 **Automation Skills:**
 - **Playwright CLI skills** — Browser automation via `playwright-cli`
 
+**Calendar Tools:**
+- **khal** — Terminal calendar client
+- **vdirsyncer** — Calendar/contact synchronization CLI
+
 **MCP Servers:**
 - **Universal MCP registration tool** (`reg-mcp`) for any MCP server
 
