@@ -209,6 +209,14 @@ ai-shell --cron
 ai-shell --ssh pass --port 22:2222
 ```
 
+When exactly one persistent named `ai-shell` container is running, host-side `claude`, `codex`, and `copilot` commands automatically run inside that container with `docker exec` instead of starting a new one-off container.
+
+If no persistent `ai-shell` container is running, those commands keep the previous behavior and start a fresh `docker compose run --rm` container.
+
+If multiple persistent `ai-shell` containers are running, the wrappers fall back to a fresh one-off container to avoid guessing. Set `AI_CLI_PREFERRED_CONTAINER=<name>` to pin `claude`, `codex`, or `copilot` to a specific running container.
+
+For named containers started with `--cron` or `--ssh`, later `ai-shell`, `claude`, `codex`, and `copilot` sessions still default to `aiuser`. Use `--root` when creating or re-entering the container only when you explicitly want root.
+
 For a reusable named container plus tmux workflow, see [persistent-claude-session.md](persistent-claude-session.md).
 
 ## Markdown Preview Server

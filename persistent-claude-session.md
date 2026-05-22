@@ -92,6 +92,10 @@ If you want a one-liner:
 ai-shell claude-main -lc "tmux attach -t claude || tmux new -s claude"
 ```
 
+While `claude-main` is running, host-side wrapper commands such as `claude`, `codex`, and `copilot` also reuse that same container automatically instead of starting a new one-off container.
+
+If more than one persistent `ai-shell` container is running, set `AI_CLI_PREFERRED_CONTAINER=claude-main` before running the wrapper to choose the target container explicitly.
+
 ## SSH Use Case
 
 This is the intended remote workflow:

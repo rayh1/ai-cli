@@ -188,7 +188,10 @@ if not defined EXISTING_ID (
   if errorlevel 1 goto cleanup
 )
 
-docker exec -it %ROOT_OPTS% -e TERM=xterm-256color -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -e PATH=/opt/venv/bin:/home/aiuser/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games "%CONTAINER_NAME%" bash%BASH_ARGS%
+set "EXEC_USER_OPTS=%ROOT_OPTS%"
+if not defined EXEC_USER_OPTS call :resolve_container_exec_user "%CONTAINER_NAME%"
+if not defined EXEC_USER_OPTS if defined CONTAINER_EXEC_USER set "EXEC_USER_OPTS=-u %CONTAINER_EXEC_USER%"
+docker exec -it %EXEC_USER_OPTS% "%CONTAINER_NAME%" env TERM=xterm-256color LANG=C.UTF-8 LC_ALL=C.UTF-8 PATH=/opt/venv/bin:/home/aiuser/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games bash%BASH_ARGS%
 goto cleanup
 
 :create_named_shell_with_services
@@ -207,8 +210,20 @@ goto cleanup
 goto after_container_lookup
 
 :after_container_lookup
-docker exec -it %ROOT_OPTS% -e TERM=xterm-256color -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -e PATH=/opt/venv/bin:/home/aiuser/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games "%CONTAINER_NAME%" bash%BASH_ARGS%
+set "EXEC_USER_OPTS=%ROOT_OPTS%"
+if not defined EXEC_USER_OPTS call :resolve_container_exec_user "%CONTAINER_NAME%"
+if not defined EXEC_USER_OPTS if defined CONTAINER_EXEC_USER set "EXEC_USER_OPTS=-u %CONTAINER_EXEC_USER%"
+docker exec -it %EXEC_USER_OPTS% "%CONTAINER_NAME%" env TERM=xterm-256color LANG=C.UTF-8 LC_ALL=C.UTF-8 PATH=/opt/venv/bin:/home/aiuser/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games bash%BASH_ARGS%
 goto cleanup
+
+:resolve_container_exec_user
+set "CONTAINER_EXEC_USER="
+for /f "tokens=1,* delims==" %%A in ('docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" "%~1" 2^>nul ^| findstr /B /C:"AI_SHELL_TARGET_USER="') do set "CONTAINER_EXEC_USER=%%B"
+if defined CONTAINER_EXEC_USER exit /b 0
+for /f "delims=" %%U in ('docker inspect -f "{{.Config.User}}" "%~1" 2^>nul') do set "CONTAINER_EXEC_USER=%%U"
+if defined CONTAINER_EXEC_USER exit /b 0
+set "CONTAINER_EXEC_USER=aiuser"
+exit /b 0
 
 :enable_existing_container_ssh
 docker exec -u root -e "AI_SHELL_SSH_PASSWORD=%SSH_PASSWORD%" "%CONTAINER_NAME%" /usr/local/bin/ai-shell-enable-ssh
@@ -265,6 +280,8 @@ set PORT_SPEC=
 set CONTAINER_PORT=
 set HOST_PORT=
 set EXTRA_PORT_PART=
+set CONTAINER_EXEC_USER=
+set EXEC_USER_OPTS=
 exit /b %ERRORLEVEL%
 
 :show_help
