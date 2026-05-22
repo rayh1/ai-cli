@@ -4,6 +4,7 @@ ARG ARG_UV_VERSION
 ARG ARG_PYTHON_VERSION
 ARG ARG_PLAYWRIGHT_CLI_VERSION
 ARG ARG_HIMALAYA_VERSION
+ARG ARG_TEA_VERSION
 
 # Basics + socat for the codex login bridge
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -34,6 +35,14 @@ RUN set -e; \
     tar -xzf /tmp/himalaya.tar.gz -C /tmp/himalaya; \
     install -m 0755 /tmp/himalaya/himalaya /usr/local/bin/himalaya; \
     rm -rf /tmp/himalaya /tmp/himalaya.tar.gz
+
+# Install tea (pinned Linux amd64 release)
+RUN set -e; \
+    curl -fsSL \
+        -o /tmp/tea \
+        https://dl.gitea.com/tea/${ARG_TEA_VERSION}/tea-${ARG_TEA_VERSION}-linux-amd64; \
+    install -m 0755 /tmp/tea /usr/local/bin/tea; \
+    rm -f /tmp/tea
 
 # Install uv
 RUN set -e; \

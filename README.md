@@ -113,6 +113,7 @@ claude -- --root
 - **Claude Code CLI** — Anthropic's Claude with native MCP support
 - **OpenAI Codex CLI** — With Windows OAuth helper (`codex-login`)
 - **GitHub Copilot CLI** — With JSON-based MCP configuration
+- **Gitea tea CLI** — Gitea command-line client available inside the container
 
 **Automation Skills:**
 - **Playwright CLI skills** — Browser automation via `playwright-cli`
