@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-target_user="${AI_SHELL_TARGET_USER:-aiuser}"
+target_user="${AI_SHELL_TARGET_USER:-${AI_CLI_TARGET_USER:-aiuser}}"
 
 if [[ -n "${AI_SHELL_ENABLE_CRON:-}" ]]; then
   /usr/local/bin/ai-shell-enable-cron
@@ -11,8 +11,5 @@ if [[ -n "${AI_SHELL_SSH_PASSWORD:-}" ]]; then
   /usr/local/bin/ai-shell-enable-ssh
 fi
 
-if [[ "${target_user}" == "root" ]]; then
-  exec bash "$@"
-fi
-
-exec sudo -E -H -u "${target_user}" bash "$@"
+export AI_CLI_TARGET_USER="${target_user}"
+exec /usr/local/bin/ai-cli-entrypoint bash "$@"

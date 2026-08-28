@@ -323,9 +323,8 @@ print(f"[OK] Github Copilot: MCP '{{server_name}}' {{status}} in {{config_file}}
             "--rm",
             "-v",
             f"{temp_script}:/tmp/setup-mcp.py",
-            "--entrypoint",
-            "python3",
             "ai-cli",
+            "python3",
             "/tmp/setup-mcp.py",
         ]
         

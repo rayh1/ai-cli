@@ -653,21 +653,32 @@ ai-cli/
 ### Running arbitrary commands in the container
 
 ```powershell
-docker compose run --rm --entrypoint bash ai-cli
+docker compose run --rm ai-cli bash
 ```
+
+The container now includes the Docker CLI and mounts the host Docker socket, so `docker ps`, `docker exec`, and `docker logs` inside `ai-cli` act on Docker Desktop running on the workstation. Treat that as host-level access.
 
 ### Accessing a specific CLI's config directory
 
 ```powershell
 # Claude
-docker compose run --rm --entrypoint bash ai-cli -c "cd ~/.claude && ls -la"
+docker compose run --rm ai-cli bash -c "cd ~/.claude && ls -la"
 
 # Codex
-docker compose run --rm --entrypoint bash ai-cli -c "cd ~/.codex && ls -la"
+docker compose run --rm ai-cli bash -c "cd ~/.codex && ls -la"
 
 # GitHub Copilot
-docker compose run --rm --entrypoint bash ai-cli -c "cd ~/.copilot && ls -la"
+docker compose run --rm ai-cli bash -c "cd ~/.copilot && ls -la"
 ```
+
+### Accessing other containers from inside ai-cli
+
+```powershell
+ai-shell -lc "docker ps"
+ai-shell -lc "docker exec -it some-container sh"
+```
+
+Use `ai-shell --root` if you intentionally want a root shell inside `ai-cli`; normal CLI and shell sessions still run as `aiuser`.
 
 ### Using Python packages in MCP servers
 

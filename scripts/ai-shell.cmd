@@ -146,7 +146,9 @@ if defined CRON_ENABLED goto run_ephemeral_shell_with_services
 if defined SSH_PASSWORD goto run_ephemeral_shell_with_services
 
 REM Default mode: ephemeral shell, same behavior as before
-docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm %ROOT_OPTS% %PORT_OPTS% --entrypoint bash ai-cli%BASH_ARGS%
+set "RUN_ENV_OPTS=-e AI_CLI_TARGET_USER=aiuser"
+if defined ROOT_OPTS set "RUN_ENV_OPTS=-e AI_CLI_TARGET_USER=root"
+docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm %ROOT_OPTS% %PORT_OPTS% %RUN_ENV_OPTS% ai-cli bash%BASH_ARGS%
 goto cleanup
 
 :run_ephemeral_shell_with_services
@@ -175,7 +177,9 @@ if not defined EXISTING_ID (
 	REM Create a persistent container with a keepalive process.
   if defined CRON_ENABLED goto create_named_shell_with_services
   if defined SSH_PASSWORD goto create_named_shell_with_services
-        docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% %PORT_OPTS% --entrypoint bash ai-cli -lc "trap : TERM INT; while :; do sleep 3600; done"
+	set "RUN_ENV_OPTS=-e AI_CLI_TARGET_USER=aiuser"
+	if defined ROOT_OPTS set "RUN_ENV_OPTS=-e AI_CLI_TARGET_USER=root"
+  docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run -d --name "%CONTAINER_NAME%" %ROOT_OPTS% %PORT_OPTS% %RUN_ENV_OPTS% ai-cli bash -lc "trap : TERM INT; while :; do sleep 3600; done"
 	if errorlevel 1 goto cleanup
 ) else (
   if defined PORT_OPTS goto existing_container_ports_unsupported
@@ -219,6 +223,8 @@ goto cleanup
 :resolve_container_exec_user
 set "CONTAINER_EXEC_USER="
 for /f "tokens=1,* delims==" %%A in ('docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" "%~1" 2^>nul ^| findstr /B /C:"AI_SHELL_TARGET_USER="') do set "CONTAINER_EXEC_USER=%%B"
+if defined CONTAINER_EXEC_USER exit /b 0
+for /f "tokens=1,* delims==" %%A in ('docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" "%~1" 2^>nul ^| findstr /B /C:"AI_CLI_TARGET_USER="') do set "CONTAINER_EXEC_USER=%%B"
 if defined CONTAINER_EXEC_USER exit /b 0
 for /f "delims=" %%U in ('docker inspect -f "{{.Config.User}}" "%~1" 2^>nul') do set "CONTAINER_EXEC_USER=%%U"
 if defined CONTAINER_EXEC_USER exit /b 0
@@ -282,6 +288,7 @@ set HOST_PORT=
 set EXTRA_PORT_PART=
 set CONTAINER_EXEC_USER=
 set EXEC_USER_OPTS=
+set RUN_ENV_OPTS=
 exit /b %ERRORLEVEL%
 
 :show_help

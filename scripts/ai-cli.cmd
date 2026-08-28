@@ -27,7 +27,7 @@ if "%~1"=="--" (
   shift
 )
 
-REM Next arg is the CLI name (entrypoint)
+REM Next arg is the CLI name (command)
 if "%~1"=="" goto missing_cli_name
 set "CLI_NAME=%~1"
 shift
@@ -66,7 +66,7 @@ if defined AI_CLI_PREFERRED_CONTAINER (
   echo [INFO] Multiple persistent ai-shell containers are running; starting a new one-off container. Set AI_CLI_PREFERRED_CONTAINER to choose one.
 )
 
-docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm --entrypoint %CLI_NAME% ai-cli%ARGS%
+docker compose --project-directory "%REPO_ROOT%" -f "%COMPOSE_FILE%" run --rm ai-cli %CLI_NAME%%ARGS%
 goto cleanup
 
 :exec_in_container
@@ -106,6 +106,8 @@ exit /b 1
 :resolve_container_exec_user
 set "CONTAINER_EXEC_USER="
 for /f "tokens=1,* delims==" %%A in ('docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" "%~1" 2^>nul ^| findstr /B /C:"AI_SHELL_TARGET_USER="') do set "CONTAINER_EXEC_USER=%%B"
+if defined CONTAINER_EXEC_USER exit /b 0
+for /f "tokens=1,* delims==" %%A in ('docker inspect -f "{{range .Config.Env}}{{println .}}{{end}}" "%~1" 2^>nul ^| findstr /B /C:"AI_CLI_TARGET_USER="') do set "CONTAINER_EXEC_USER=%%B"
 if defined CONTAINER_EXEC_USER exit /b 0
 for /f "delims=" %%U in ('docker inspect -f "{{.Config.User}}" "%~1" 2^>nul') do set "CONTAINER_EXEC_USER=%%U"
 if defined CONTAINER_EXEC_USER exit /b 0

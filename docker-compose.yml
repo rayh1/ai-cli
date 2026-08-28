@@ -17,11 +17,15 @@ services:
       - TERM=xterm-256color
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
+      - AI_CLI_TARGET_USER=aiuser
+    entrypoint:
+      - /usr/local/bin/ai-cli-entrypoint
     volumes:
       # Mount the *caller's* CWD (set by wrapper) into /workspace
       - type: bind
         source: ${HOST_PWD}
         target: /workspace
+      - /var/run/docker.sock:/var/run/docker.sock
       # Persist full home (auth + settings)
       - ai-cli_home:/home/aiuser
       - playwright_cache:/home/aiuser/.cache/ms-playwright   # <-- persist browsers
