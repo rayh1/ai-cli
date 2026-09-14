@@ -1,6 +1,8 @@
 services:
   # Generic service - entrypoint can be overridden dynamically
   ai-cli:
+    security_opt:
+      - seccomp=unconfined # Codex's bubblewrap sandbox needs user namespaces
     build:
       context: .
       dockerfile: Docker/Dockerfile.ai-cli
