@@ -74,6 +74,9 @@ RUN printf '%s\n' \
 # Install pip into the venv so pip commands work
 RUN uv pip install pip
 
+# Install Comfy CLI in the shared Python venv
+RUN uv pip install comfy-cli
+
 # Install ALL CLIs
 RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
 

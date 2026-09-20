@@ -113,6 +113,7 @@ claude -- --root
 - **Claude Code CLI** — Anthropic's Claude with native MCP support
 - **OpenAI Codex CLI** — With Windows OAuth helper (`codex-login`)
 - **GitHub Copilot CLI** — With JSON-based MCP configuration
+- **Comfy CLI** — Terminal access to local ComfyUI and Comfy Cloud workflows
 - **Gitea tea CLI** — Gitea command-line client available inside the container
 
 **Automation Skills:**
@@ -140,6 +141,7 @@ claude -- --root
 - [Access Point and Multiplexer Scenarios](access-point-and-multiplexer-scenarios.md)
 - [Markdown Preview Server](#markdown-preview-server)
 - [Persistent Claude Session](persistent-claude-session.md)
+- [Comfy CLI](#comfy-cli)
 - [Playwright CLI Skills](#playwright-cli-skills)
 - [MCP Server Management](#mcp-server-management)
    - [Using the Universal MCP Registration Tool](#using-the-universal-mcp-registration-tool)
@@ -174,6 +176,13 @@ codex -p "refactor foo() and explain changes" --output-format json
 ```powershell
 copilot
 copilot -p "analyze this code and suggest improvements"
+```
+
+**Comfy CLI:**
+```powershell
+ai-shell -lc "comfy --help"
+ai-shell -lc "comfy env"
+ai-shell -lc "comfy --where local run --workflow /workspace/workflow.json --wait | comfy --where local download"
 ```
 
 **ai-shell:**
@@ -219,6 +228,23 @@ If multiple persistent `ai-shell` containers are running, the wrappers fall back
 For named containers started with `--cron` or `--ssh`, later `ai-shell`, `claude`, `codex`, and `copilot` sessions still default to `aiuser`. Use `--root` when creating or re-entering the container only when you explicitly want root.
 
 For a reusable named container plus tmux workflow, see [persistent-claude-session.md](persistent-claude-session.md).
+
+## Comfy CLI
+
+The image now includes `comfy` from `comfy-cli`, installed into the shared Python venv during the Docker build.
+
+By default, the container targets `http://127.0.0.1:8188` through `COMFY_LOCAL_URL` and starts a `socat` loopback proxy inside the container to forward that address to `http://host.docker.internal:8188`. This keeps Comfy CLI on a loopback URL while still reaching a ComfyUI server running on the Docker host. The compose service also adds an explicit `host-gateway` mapping so the host name resolves on Linux Docker hosts that support it.
+
+If your host ComfyUI listens on a different port, override `COMFY_LOCAL_PROXY_TARGET_URL` when you run the container or edit [docker-compose.yml](docker-compose.yml). Keep `COMFY_LOCAL_URL` on `127.0.0.1` so Comfy CLI still treats it as local.
+
+Typical local flow:
+
+```powershell
+ai-shell -lc "comfy env"
+ai-shell -lc "comfy --where local run --workflow /workspace/workflow.json --wait | comfy --where local download"
+```
+
+If you later sign in to Comfy Cloud, the CLI can auto-route to cloud. Use `--where local` whenever you want to force the host-side ComfyUI instead of cloud.
 
 ## Markdown Preview Server
 
