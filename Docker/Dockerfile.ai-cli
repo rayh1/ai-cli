@@ -6,9 +6,11 @@ ARG ARG_PLAYWRIGHT_CLI_VERSION
 ARG ARG_HIMALAYA_VERSION
 ARG ARG_TEA_VERSION
 
+ENV WHISPER_MODELS_DIR=/opt/whisper-models
+
 # Basics + socat for the codex login bridge
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates bash curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc tmux openssh-server cron rclone poppler-utils ripgrep file docker.io && \
+    git ca-certificates bash curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc tmux openssh-server cron rclone poppler-utils ripgrep file docker.io ffmpeg libsndfile1 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN printf '%s\n' \
@@ -110,13 +112,15 @@ RUN if [ -s /opt/extensions/requirements.txt ]; then \
         uv pip install /opt/extensions/packages/*.whl; \
     fi
 
+RUN mkdir -p "${WHISPER_MODELS_DIR}" && \
+    python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8', download_root='${WHISPER_MODELS_DIR}')"
+
 # Set timezone
 ENV TZ=Europe/Amsterdam
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Create non-root user and set permissions
-RUN useradd -m -s /bin/bash aiuser && \
-    chown -R aiuser:aiuser /opt/venv /opt/python /opt/mcp /opt/extensions
+# Create non-root user for the runtime shell; the prebuilt toolchain under /opt stays root-owned and read-only.
+RUN useradd -m -s /bin/bash aiuser
 
 # Workdir; runtime user is selected by the compose entrypoint
 WORKDIR /workspace
