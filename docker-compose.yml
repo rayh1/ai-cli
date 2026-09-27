@@ -35,6 +35,13 @@ services:
       # Persist full home (auth + settings)
       - ai-cli_home:/home/aiuser
       - playwright_cache:/home/aiuser/.cache/ms-playwright   # <-- persist browsers
+        # ComfyUI (host) — Claude can add/download models and input images
+      - type: bind
+        source: D:/ComfyUI_windows_portable_nvidia/ComfyUI_windows_portable/ComfyUI/models
+        target: /comfy/models
+      - type: bind
+        source: D:/ComfyUI_windows_portable_nvidia/ComfyUI_windows_portable/ComfyUI/input
+        target: /comfy/input      
     stdin_open: true
     tty: true
 
