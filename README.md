@@ -233,9 +233,9 @@ For a reusable named container plus tmux workflow, see [persistent-claude-sessio
 
 The image now includes `comfy` from `comfy-cli`, installed into the shared Python venv during the Docker build.
 
-By default, the container targets `http://127.0.0.1:8188` through `COMFY_LOCAL_URL` and starts a `socat` loopback proxy inside the container to forward that address to `http://host.docker.internal:8188`. This keeps Comfy CLI on a loopback URL while still reaching a ComfyUI server running on the Docker host. The compose service also adds an explicit `host-gateway` mapping so the host name resolves on Linux Docker hosts that support it.
+By default, the container targets `http://host.docker.internal:8188` through `COMFY_LOCAL_URL`. The compose service also adds an explicit `host-gateway` mapping so the host name resolves on Linux Docker hosts that support it.
 
-If your host ComfyUI listens on a different port, override `COMFY_LOCAL_PROXY_TARGET_URL` when you run the container or edit [docker-compose.yml](docker-compose.yml). Keep `COMFY_LOCAL_URL` on `127.0.0.1` so Comfy CLI still treats it as local.
+If your host ComfyUI listens on a different port, override `COMFY_LOCAL_URL` when you run the container or edit [docker-compose.yml](docker-compose.yml).
 
 Typical local flow:
 
