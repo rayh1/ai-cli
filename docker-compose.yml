@@ -12,6 +12,8 @@ services:
         - ARG_PLAYWRIGHT_CLI_VERSION=${PLAYWRIGHT_CLI_VERSION}
         - ARG_HIMALAYA_VERSION=${HIMALAYA_VERSION}
         - ARG_TEA_VERSION=${TEA_VERSION}
+        - ARG_RCLONE_VERSION=${RCLONE_VERSION}
+        - ARG_RESTIC_VERSION=${RESTIC_VERSION}
     working_dir: /workspace
     environment:
       - COMFY_LOCAL_URL=http://host.docker.internal:8188

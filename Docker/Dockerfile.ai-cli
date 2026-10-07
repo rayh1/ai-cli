@@ -5,12 +5,14 @@ ARG ARG_PYTHON_VERSION
 ARG ARG_PLAYWRIGHT_CLI_VERSION
 ARG ARG_HIMALAYA_VERSION
 ARG ARG_TEA_VERSION
+ARG ARG_RCLONE_VERSION
+ARG ARG_RESTIC_VERSION
 
 ENV WHISPER_MODELS_DIR=/opt/whisper-models
 
 # Basics + socat for the codex login bridge
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates bash curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc tmux openssh-server cron rclone poppler-utils ripgrep file docker.io ffmpeg libsndfile1 && \
+    git ca-certificates bash bzip2 curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc tmux openssh-server cron poppler-utils ripgrep file docker.io ffmpeg libsndfile1 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN printf '%s\n' \
@@ -45,6 +47,25 @@ RUN set -e; \
         https://dl.gitea.com/tea/${ARG_TEA_VERSION}/tea-${ARG_TEA_VERSION}-linux-amd64; \
     install -m 0755 /tmp/tea /usr/local/bin/tea; \
     rm -f /tmp/tea
+
+# Install rclone (pinned Linux amd64 release)
+RUN set -e; \
+    curl -fsSL \
+        -o /tmp/rclone.zip \
+        https://github.com/rclone/rclone/releases/download/v${ARG_RCLONE_VERSION}/rclone-v${ARG_RCLONE_VERSION}-linux-amd64.zip; \
+    mkdir -p /tmp/rclone; \
+    unzip -q /tmp/rclone.zip -d /tmp/rclone; \
+    install -m 0755 /tmp/rclone/rclone-v${ARG_RCLONE_VERSION}-linux-amd64/rclone /usr/local/bin/rclone; \
+    rm -rf /tmp/rclone /tmp/rclone.zip
+
+# Install restic (pinned Linux amd64 release)
+RUN set -e; \
+    curl -fsSL \
+        -o /tmp/restic.bz2 \
+        https://github.com/restic/restic/releases/download/v${ARG_RESTIC_VERSION}/restic_${ARG_RESTIC_VERSION}_linux_amd64.bz2; \
+    bunzip2 /tmp/restic.bz2; \
+    install -m 0755 /tmp/restic /usr/local/bin/restic; \
+    rm -f /tmp/restic
 
 # Install uv
 RUN set -e; \
