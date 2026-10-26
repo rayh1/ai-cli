@@ -1,5 +1,9 @@
 FROM node:24-bookworm-slim
 
+# Upgrade the base image packages to pick up the latest security fixes
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 ARG ARG_UV_VERSION
 ARG ARG_PYTHON_VERSION
 ARG ARG_PLAYWRIGHT_CLI_VERSION
@@ -7,12 +11,13 @@ ARG ARG_HIMALAYA_VERSION
 ARG ARG_TEA_VERSION
 ARG ARG_RCLONE_VERSION
 ARG ARG_RESTIC_VERSION
+ARG ARG_GITLEAKS_VERSION
 
 ENV WHISPER_MODELS_DIR=/opt/whisper-models
 
 # Basics + socat for the codex login bridge
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates bash bzip2 curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc tmux openssh-server cron poppler-utils ripgrep file docker.io ffmpeg libsndfile1 && \
+    git ca-certificates bash bzip2 curl socat wget jq sudo vim unzip gpg gnupg apt-transport-https lsb-release tree bc tmux openssh-server cron poppler-utils ripgrep file docker.io ffmpeg libsndfile1 libimage-exiftool-perl && \
     rm -rf /var/lib/apt/lists/*
 
 RUN printf '%s\n' \
@@ -66,6 +71,14 @@ RUN set -e; \
     bunzip2 /tmp/restic.bz2; \
     install -m 0755 /tmp/restic /usr/local/bin/restic; \
     rm -f /tmp/restic
+
+# Install gitleaks (pinned Linux x64 release)
+RUN cd /tmp \
+ && curl -fsSLO https://github.com/gitleaks/gitleaks/releases/download/v${ARG_GITLEAKS_VERSION}/gitleaks_${ARG_GITLEAKS_VERSION}_linux_x64.tar.gz \
+ && curl -fsSLO https://github.com/gitleaks/gitleaks/releases/download/v${ARG_GITLEAKS_VERSION}/gitleaks_${ARG_GITLEAKS_VERSION}_checksums.txt \
+ && grep " gitleaks_${ARG_GITLEAKS_VERSION}_linux_x64.tar.gz\$" gitleaks_${ARG_GITLEAKS_VERSION}_checksums.txt | sha256sum -c - \
+ && tar -xzf gitleaks_${ARG_GITLEAKS_VERSION}_linux_x64.tar.gz -C /usr/local/bin gitleaks \
+ && rm gitleaks_${ARG_GITLEAKS_VERSION}_*
 
 # Install uv
 RUN set -e; \
