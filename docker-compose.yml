@@ -15,6 +15,7 @@ services:
         - ARG_RCLONE_VERSION=${RCLONE_VERSION}
         - ARG_RESTIC_VERSION=${RESTIC_VERSION}
         - ARG_GITLEAKS_VERSION=${GITLEAKS_VERSION}
+        - ARG_OSV_SCANNER_VERSION=${OSV_SCANNER_VERSION}
     working_dir: /workspace
     environment:
       - COMFY_LOCAL_URL=http://host.docker.internal:8188

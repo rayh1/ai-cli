@@ -115,6 +115,7 @@ claude -- --root
 - **GitHub Copilot CLI** — With JSON-based MCP configuration
 - **Comfy CLI** — Terminal access to local ComfyUI and Comfy Cloud workflows
 - **Gitea tea CLI** — Gitea command-line client available inside the container
+- **OSV-Scanner** — Open source vulnerability scanner (`osv-scanner`)
 
 **Automation Skills:**
 - **Playwright CLI skills** — Browser automation via `playwright-cli`
