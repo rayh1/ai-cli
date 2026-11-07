@@ -113,6 +113,7 @@ claude -- --root
 - **Claude Code CLI** — Anthropic's Claude with native MCP support
 - **OpenAI Codex CLI** — With Windows OAuth helper (`codex-login`)
 - **GitHub Copilot CLI** — With JSON-based MCP configuration
+- **Herdr CLI** — Fast terminal multiplexer with AI agent detection
 - **Comfy CLI** — Terminal access to local ComfyUI and Comfy Cloud workflows
 - **Gitea tea CLI** — Gitea command-line client available inside the container
 - **OSV-Scanner** — Open source vulnerability scanner (`osv-scanner`)

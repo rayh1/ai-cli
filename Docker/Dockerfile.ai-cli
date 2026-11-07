@@ -7,6 +7,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
 ARG ARG_UV_VERSION
 ARG ARG_PYTHON_VERSION
 ARG ARG_PLAYWRIGHT_CLI_VERSION
+ARG ARG_HERDR_VERSION
 ARG ARG_HIMALAYA_VERSION
 ARG ARG_TEA_VERSION
 ARG ARG_RCLONE_VERSION
@@ -123,7 +124,7 @@ RUN uv pip install pip
 RUN uv pip install comfy-cli
 
 # Install ALL CLIs
-RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot
+RUN npm i -g @anthropic-ai/claude-code @openai/codex @github/copilot groeponline-herdr@${ARG_HERDR_VERSION}
 
 # Playwright CLI + browser dependencies (Chromium only to keep the image smaller)
 RUN npm i -g @playwright/cli@${ARG_PLAYWRIGHT_CLI_VERSION} \
